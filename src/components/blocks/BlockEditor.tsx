@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useCallback, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Reorder } from "framer-motion";
 import BlockRenderer from "./BlockRenderer";
-import type { Block, BlockType, BlockProps } from "@/types/block";
-import { createBlock } from "@/actions/block.actions";
+import FormattingToolbar from "./FormattingToolbar";
+import type { Block, BlockType } from "@/types/block";
+import { createBlock, deleteBlock, reorderBlocks } from "@/actions/block.actions";
 
 interface BlockEditorProps {
   pageId: string;
@@ -15,11 +18,67 @@ export default function BlockEditor({ pageId, initialBlocks }: BlockEditorProps)
   const [isPending, startTransition] = useTransition();
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
+  const router = useRouter();
 
+  // Use router.refresh() instead of window.location.reload()
   const handleRefresh = useCallback(() => {
-    // 실제로는 서버에서 새로고침
-    window.location.reload();
-  }, []);
+    router.refresh();
+  }, [router]);
+
+  // Handle block deletion with optimistic update
+  const handleDeleteBlock = useCallback(
+    async (blockId: string) => {
+      // Optimistic update
+      setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+
+      startTransition(async () => {
+        await deleteBlock(blockId);
+        router.refresh();
+      });
+    },
+    [router]
+  );
+
+  // Handle drag and drop reorder
+  const handleReorder = useCallback(
+    (newBlocks: Block[]) => {
+      setBlocks(newBlocks);
+
+      // Debounce server update
+      startTransition(async () => {
+        const blockOrders = newBlocks.map((b, idx) => ({ id: b.id, order: idx }));
+        await reorderBlocks(pageId, blockOrders);
+        router.refresh();
+      });
+    },
+    [pageId, router]
+  );
+
+  // Handle block reorder with optimistic update (for keyboard controls)
+  const handleMoveBlock = useCallback(
+    async (blockId: string, direction: "up" | "down") => {
+      const currentIndex = blocks.findIndex((b) => b.id === blockId);
+      if (currentIndex === -1) return;
+
+      const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+      if (newIndex < 0 || newIndex >= blocks.length) return;
+
+      // Optimistic update
+      const newBlocks = [...blocks];
+      const [removed] = newBlocks.splice(currentIndex, 1);
+      newBlocks.splice(newIndex, 0, removed);
+      setBlocks(newBlocks);
+
+      // Update orders on server
+      startTransition(async () => {
+        const blockOrders = newBlocks.map((b, idx) => ({ id: b.id, order: idx }));
+        await reorderBlocks(pageId, blockOrders);
+        router.refresh();
+      });
+    },
+    [blocks, pageId, router]
+  );
 
   const handleAddBlock = useCallback(
     async (type: BlockType = "paragraph") => {
@@ -44,54 +103,75 @@ export default function BlockEditor({ pageId, initialBlocks }: BlockEditorProps)
     { type: "todo", label: "할 일", icon: "☑️" },
     { type: "bullet", label: "글머리 기호", icon: "•" },
     { type: "quote", label: "인용", icon: "❝" },
-    { type: "divider", label: "구분선", icon: "—" },
+    { type: "divider", label: "구분선", icon: "➖" },
   ];
 
   return (
     <div className="blocks-container">
+      <FormattingToolbar />
+
       {blocks.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">📝</div>
-          <div className="empty-state-title">비어있는 페이지</div>
+          <div className="empty-state-title">빈 페이지</div>
           <div className="empty-state-description">
-            아래 버튼을 클릭하거나 타이핑을 시작하세요
+            Enter를 눌러 작성하거나, /를 입력해 명령어를 사용하세요
           </div>
           <button
-            className="btn btn-primary"
-            style={{ marginTop: "16px" }}
+            className="btn btn-secondary"
+            style={{ marginTop: "24px" }}
             onClick={() => handleAddBlock("paragraph")}
           >
-            + 블록 추가
+            블록 추가
           </button>
         </div>
       ) : (
         <>
-          {blocks.map((block) => (
-            <BlockRenderer
-              key={block.id}
-              block={block}
-              pageId={pageId}
-              onUpdate={handleRefresh}
-            />
-          ))}
+          <Reorder.Group
+            axis="y"
+            values={blocks}
+            onReorder={handleReorder}
+            layoutScroll
+            style={{ listStyle: "none", margin: 0, padding: 0 }}
+          >
+            {blocks.map((block, index) => (
+              <Reorder.Item
+                key={block.id}
+                value={block}
+                onDragStart={() => setDraggedBlockId(block.id)}
+                onDragEnd={() => setDraggedBlockId(null)}
+                initial={false}
+                style={{ listStyle: "none" }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 35,
+                }}
+              >
+                <BlockRenderer
+                  block={block}
+                  pageId={pageId}
+                  onUpdate={handleRefresh}
+                  onDelete={handleDeleteBlock}
+                  onMoveUp={index > 0 ? () => handleMoveBlock(block.id, "up") : undefined}
+                  onMoveDown={index < blocks.length - 1 ? () => handleMoveBlock(block.id, "down") : undefined}
+                  isDragging={draggedBlockId === block.id}
+                />
+              </Reorder.Item>
+            ))}
+          </Reorder.Group>
 
           {/* Add Block Button */}
           <div
             className="block"
             style={{
-              opacity: 0.5,
               cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "8px 4px",
-              color: "var(--text-muted)",
+              padding: "8px 0",
+              color: "var(--ink-tertiary)",
               fontSize: "14px",
             }}
             onClick={() => handleAddBlock("paragraph")}
           >
-            <span>+</span>
-            <span>블록 추가 또는 / 입력</span>
+            <span style={{ opacity: 0.6 }}>+</span>
           </div>
         </>
       )}

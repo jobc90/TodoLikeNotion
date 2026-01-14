@@ -33,12 +33,9 @@ export default function PageHeader({ pageId, title, icon }: PageHeaderProps) {
     [pageId]
   );
 
-  // 일반적인 이모지 목록
+  // 일반적인 기호 목록
   const commonEmojis = [
-    "📄", "📝", "📓", "📒", "📕", "📗", "📘", "📙",
-    "✅", "⭐", "💡", "🎯", "🚀", "💻", "🔧", "📊",
-    "📈", "📉", "🗂️", "📁", "📂", "🗃️", "💼", "📋",
-    "🎨", "🎵", "🎬", "📷", "🔗", "💬", "📌", "🔖",
+    "📝", "📋", "📌", "📎", "📊", "📈", "💡", "🎯", "⭐", "❤️", "🔥", "✅", "🚀", "💼"
   ];
 
   return (
@@ -97,7 +94,7 @@ export default function PageHeader({ pageId, title, icon }: PageHeaderProps) {
         value={localTitle}
         onChange={(e) => setLocalTitle(e.target.value)}
         onBlur={() => handleTitleChange(localTitle)}
-        placeholder="Untitled"
+        placeholder="제목 없음"
       />
     </div>
   );

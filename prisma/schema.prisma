@@ -91,3 +91,87 @@ model Attachment {
 
   @@index([blockId])
 }
+
+// ==================== Database (노션 데이터베이스) ====================
+model Database {
+  id        String   @id @default(cuid())
+  pageId    String?  // 페이지에 임베드 시
+  title     String   @default("Untitled")
+  icon      String?  // 이모지 아이콘
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties Property[]
+  rows       Row[]
+  views      View[]
+
+  @@index([pageId])
+}
+
+// ==================== Property (데이터베이스 컬럼) ====================
+model Property {
+  id         String   @id @default(cuid())
+  databaseId String
+  name       String
+  type       String   // text, number, select, multi_select, date, checkbox, url
+  options    String   @default("{}") // JSON: Select 옵션들 { options: [{ id, name, color }] }
+  order      Int
+  width      Int      @default(150)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  cells    Cell[]
+
+  @@index([databaseId])
+  @@index([order])
+}
+
+// ==================== Row (데이터베이스 행) ====================
+model Row {
+  id         String   @id @default(cuid())
+  databaseId String
+  order      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  cells    Cell[]
+
+  @@index([databaseId])
+  @@index([order])
+}
+
+// ==================== Cell (셀 데이터) ====================
+model Cell {
+  id         String   @id @default(cuid())
+  rowId      String
+  propertyId String
+  value      String   @default("") // 타입별 값 저장 (JSON 또는 문자열)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  row      Row      @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([rowId, propertyId])
+  @@index([rowId])
+  @@index([propertyId])
+}
+
+// ==================== View (뷰 설정) ====================
+model View {
+  id         String   @id @default(cuid())
+  databaseId String
+  name       String   @default("기본 뷰")
+  type       String   @default("table") // table, board, gallery
+  config     String   @default("{}") // JSON: { filters, sorts, hiddenColumns, groupBy }
+  order      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  database Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  @@index([databaseId])
+  @@index([order])
+}
