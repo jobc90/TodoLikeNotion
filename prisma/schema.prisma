@@ -1,0 +1,93 @@
+// Notion-like Todo App - Prisma Schema
+// Block 기반 문서 구조
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== Page (문서) ====================
+model Page {
+  id        String   @id @default(cuid())
+  title     String   @default("Untitled")
+  icon      String?  // 이모지 아이콘
+  cover     String?  // 커버 이미지 경로
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  blocks    Block[]
+  tags      PageTag[]
+  revisions Revision[]
+}
+
+// ==================== Block (블록 - 노션 핵심) ====================
+model Block {
+  id            String   @id @default(cuid())
+  pageId        String
+  parentBlockId String?  // null이면 페이지 루트 레벨
+  type          String   // paragraph, heading1, heading2, heading3, todo, toggle, bullet, numbered
+  props         String   @default("{}") // JSON: { text, checked, level, ... }
+  plainText     String?  // 검색용 순수 텍스트
+  order         Int      // 정렬 순서
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  page        Page    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  parentBlock Block?  @relation("BlockHierarchy", fields: [parentBlockId], references: [id], onDelete: Cascade)
+  children    Block[] @relation("BlockHierarchy")
+
+  @@index([pageId])
+  @@index([parentBlockId])
+  @@index([order])
+}
+
+// ==================== Revision (버전 히스토리) ====================
+model Revision {
+  id        String   @id @default(cuid())
+  pageId    String
+  snapshot  String   // JSON: 페이지 전체 상태 스냅샷
+  createdAt DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@index([createdAt])
+}
+
+// ==================== Tag (태그) ====================
+model Tag {
+  id    String    @id @default(cuid())
+  name  String    @unique
+  color String?   // 태그 색상 (hex)
+
+  pages PageTag[]
+}
+
+// ==================== PageTag (N:N 관계) ====================
+model PageTag {
+  pageId String
+  tagId  String
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([pageId, tagId])
+}
+
+// ==================== Attachment (첨부파일) ====================
+model Attachment {
+  id           String   @id @default(cuid())
+  originalName String
+  storagePath  String   // data/uploads/xxx
+  mimeType     String
+  size         Int
+  blockId      String?  // 연결된 블록 ID (optional)
+  createdAt    DateTime @default(now())
+
+  @@index([blockId])
+}
