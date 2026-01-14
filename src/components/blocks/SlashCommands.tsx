@@ -8,7 +8,7 @@ interface CommandOption {
   type: BlockType;
   label: string;
   description: string;
-  icon: string;
+  icon: JSX.Element;
   keywords: string[];
 }
 
@@ -22,72 +22,92 @@ interface SlashCommandsProps {
 const COMMAND_OPTIONS: CommandOption[] = [
   {
     type: "paragraph",
-    label: "텍스트",
-    description: "일반 텍스트로 작성을 시작하세요.",
-    icon: "📝",
+    label: "Text",
+    description: "Just start writing with plain text.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18H3"/></svg>
+    ),
     keywords: ["text", "paragraph", "p"],
   },
   {
     type: "heading1",
-    label: "제목 1",
-    description: "큰 섹션 제목.",
-    icon: "H1",
+    label: "Heading 1",
+    description: "Big section heading.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/></svg>
+    ),
     keywords: ["heading", "h1", "title"],
   },
   {
     type: "heading2",
-    label: "제목 2",
-    description: "중간 섹션 제목.",
-    icon: "H2",
+    label: "Heading 2",
+    description: "Medium section heading.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1"/></svg>
+    ),
     keywords: ["heading", "h2", "subtitle"],
   },
   {
     type: "heading3",
-    label: "제목 3",
-    description: "작은 섹션 제목.",
-    icon: "H3",
+    label: "Heading 3",
+    description: "Small section heading.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2"/><path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2"/></svg>
+    ),
     keywords: ["heading", "h3"],
   },
   {
     type: "todo",
-    label: "할 일",
-    description: "체크박스로 할 일을 관리하세요.",
-    icon: "☑️",
+    label: "To-do List",
+    description: "Track tasks with a todo list.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+    ),
     keywords: ["todo", "task", "checkbox", "check"],
   },
   {
     type: "bullet",
-    label: "글머리 기호 목록",
-    description: "간단한 글머리 기호 목록을 만드세요.",
-    icon: "•",
+    label: "Bulleted List",
+    description: "Create a simple bulleted list.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    ),
     keywords: ["bullet", "list", "ul"],
   },
   {
     type: "numbered",
-    label: "번호 매기기 목록",
-    description: "번호가 매겨진 목록을 만드세요.",
-    icon: "🔢",
+    label: "Numbered List",
+    description: "Create a list with numbering.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 6h11"/><path d="M10 12h11"/><path d="M10 18h11"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+    ),
     keywords: ["numbered", "number", "list", "ol"],
   },
   {
     type: "toggle",
-    label: "토글 목록",
-    description: "내용을 숨기거나 표시할 수 있습니다.",
-    icon: "▶️",
+    label: "Toggle List",
+    description: "Toggles can hide and show content inside.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m10 8 4 4-4 4"/></svg>
+    ),
     keywords: ["toggle", "collapse", "dropdown"],
   },
   {
     type: "quote",
-    label: "인용",
-    description: "인용문을 작성하세요.",
-    icon: "❝",
+    label: "Quote",
+    description: "Capture a quote.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg>
+    ),
     keywords: ["quote", "blockquote", "cite"],
   },
   {
     type: "divider",
-    label: "구분선",
-    description: "블록을 시각적으로 구분하세요.",
-    icon: "➖",
+    label: "Divider",
+    description: "Visually divide blocks.",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M19 5H5"/><path d="M19 19H5"/></svg>
+    ),
     keywords: ["divider", "hr", "separator", "line"],
   },
 ];
@@ -215,6 +235,7 @@ export default function SlashCommands({
 
   const menuPosition = getMenuPosition();
 
+  // Empty State
   if (filteredOptions.length === 0) {
     return (
       <motion.div
@@ -231,8 +252,7 @@ export default function SlashCommands({
         transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
       >
         <div className="slash-commands-empty">
-          <div className="slash-commands-empty-icon">🔍</div>
-          <div className="slash-commands-empty-text">검색 결과 없음</div>
+          <div className="slash-commands-empty-text">No results</div>
         </div>
       </motion.div>
     );
@@ -252,16 +272,9 @@ export default function SlashCommands({
       exit={{ opacity: 0, scale: 0.95, y: -8 }}
       transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
     >
-      {searchQuery && (
-        <motion.div
-          className="slash-commands-header"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.05 }}
-        >
-          <span className="slash-commands-header-label">블록</span>
-        </motion.div>
-      )}
+      <div className="slash-commands-header">
+        <span className="slash-commands-header-label">Basic Blocks</span>
+      </div>
 
       <div className="slash-commands-list">
         <AnimatePresence mode="popLayout">
@@ -302,24 +315,6 @@ export default function SlashCommands({
           ))}
         </AnimatePresence>
       </div>
-
-      <motion.div
-        className="slash-commands-footer"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-      >
-        <span className="slash-commands-footer-hint">
-          <kbd>↑</kbd>
-          <kbd>↓</kbd> 탐색
-        </span>
-        <span className="slash-commands-footer-hint">
-          <kbd>↵</kbd> 선택
-        </span>
-        <span className="slash-commands-footer-hint">
-          <kbd>esc</kbd> 닫기
-        </span>
-      </motion.div>
     </motion.div>
   );
 }

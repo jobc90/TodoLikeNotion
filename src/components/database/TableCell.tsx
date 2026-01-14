@@ -65,8 +65,23 @@ export default function TableCell({
     return null;
   }, [property.type]);
 
+  // Sync editing value with prop, but prevent optimistic rollback
+  const lastSubmittedValue = useRef<string | null>(null);
+
   useEffect(() => {
-    setEditValue(value);
+    // 만약 현재 prop value가 우리가 마지막으로 전송한 값과 같다면 동기화 (업데이트 완료)
+    if (lastSubmittedValue.current !== null && value === lastSubmittedValue.current) {
+      lastSubmittedValue.current = null;
+      setEditValue(value);
+      return;
+    }
+
+    // 전송 중이 아닐 때만 동기화 (외부 변경 사항 반영)
+    if (lastSubmittedValue.current === null) {
+      setEditValue(value);
+    }
+    // 전송 중이고(value !== lastSubmittedValue), 값도 다르다면(value !== editValue)
+    // 서버 응답이 오기 전인 구버전 value일 가능성이 높으므로 덮어쓰지 않음.
   }, [value]);
 
   // Handle text/number editing
@@ -89,7 +104,8 @@ export default function TableCell({
       return;
     }
     setIsEditing(true);
-    setEditValue(value);
+    // 편집 시작 시에는 현재 보이는 값(낙관적 업데이트 된 값) 유지
+    // setEditValue(value); // 불필요, 이미 렌더링 된 값 사용
   }, [property.type, value]);
 
   useEffect(() => {
@@ -113,6 +129,7 @@ export default function TableCell({
     }
     setValidationError(null);
     if (editValue !== value) {
+      lastSubmittedValue.current = editValue; // 제출한 값 기록
       onUpdate(editValue);
     }
   }, [editValue, value, onUpdate, validateValue]);
@@ -171,30 +188,37 @@ export default function TableCell({
 
   // Handle checkbox toggle
   const handleCheckboxToggle = useCallback(() => {
-    const newValue = value === "true" ? "false" : "true";
+    const newValue = editValue === "true" ? "false" : "true";
+    setEditValue(newValue);
     onUpdate(newValue);
-  }, [value, onUpdate]);
+  }, [editValue, onUpdate]);
 
   // Handle select option selection
   const handleSelectOption = useCallback(
     (optionId: string) => {
+      let newValue = optionId;
       if (property.type === "multi_select") {
-        const currentValues = value ? value.split(",") : [];
+        const currentValues = editValue ? editValue.split(",") : [];
         const newValues = currentValues.includes(optionId)
           ? currentValues.filter((v) => v !== optionId)
           : [...currentValues, optionId];
-        onUpdate(newValues.join(","));
-      } else {
-        onUpdate(optionId);
+        newValue = newValues.join(",");
+      }
+      
+      setEditValue(newValue);
+      onUpdate(newValue);
+      
+      if (property.type !== "multi_select") {
         setShowDropdown(false);
       }
     },
-    [property.type, value, onUpdate]
+    [property.type, editValue, onUpdate]
   );
 
   // Handle date selection
   const handleDateSelect = useCallback(
     (date: string) => {
+      setEditValue(date);
       onUpdate(date);
       setShowDropdown(false);
     },
@@ -209,7 +233,7 @@ export default function TableCell({
           <div className="cell-checkbox">
             <input
               type="checkbox"
-              checked={value === "true"}
+              checked={editValue === "true"}
               onChange={handleCheckboxToggle}
             />
           </div>
@@ -217,7 +241,7 @@ export default function TableCell({
 
       case "select":
       case "multi_select": {
-        const selectedIds = value ? value.split(",") : [];
+        const selectedIds = editValue ? editValue.split(",") : [];
         const selectedOptions = (property.parsedOptions.options || []).filter(
           (opt) => selectedIds.includes(opt.id)
         );
@@ -239,7 +263,7 @@ export default function TableCell({
             className="table-cell-content cell-date"
             onClick={handleStartEditing}
           >
-            {value ? formatDate(value) : ""}
+            {editValue ? formatDate(editValue) : ""}
           </div>
         );
 
@@ -256,14 +280,14 @@ export default function TableCell({
           />
         ) : (
           <div className="table-cell-content cell-url" onClick={handleStartEditing}>
-            {value && (
+            {editValue && (
               <a
-                href={value}
+                href={editValue}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
               >
-                {value}
+                {editValue}
               </a>
             )}
           </div>
@@ -285,7 +309,7 @@ export default function TableCell({
             className="table-cell-content cell-number"
             onClick={handleStartEditing}
           >
-            {value}
+            {editValue}
           </div>
         );
 
@@ -306,7 +330,7 @@ export default function TableCell({
             className="table-cell-content cell-text"
             onClick={handleStartEditing}
           >
-            {value}
+            {editValue}
           </div>
         );
     }
@@ -335,7 +359,7 @@ export default function TableCell({
           <SelectDropdown
             position={dropdownPosition}
             options={property.parsedOptions.options || []}
-            selectedIds={value ? value.split(",") : []}
+            selectedIds={editValue ? editValue.split(",") : []}
             multiSelect={property.type === "multi_select"}
             onSelect={handleSelectOption}
             onAddOption={onAddSelectOption}
@@ -347,7 +371,7 @@ export default function TableCell({
       {showDropdown && property.type === "date" && (
         <DatePicker
           position={dropdownPosition}
-          value={value}
+          value={editValue}
           onSelect={handleDateSelect}
           onClose={() => setShowDropdown(false)}
         />

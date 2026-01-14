@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { updatePage } from "@/actions/page.actions";
 
 interface PageHeaderProps {
@@ -33,59 +33,72 @@ export default function PageHeader({ pageId, title, icon }: PageHeaderProps) {
     [pageId]
   );
 
-  // 일반적인 기호 목록
+  // Common emojis
   const commonEmojis = [
-    "📝", "📋", "📌", "📎", "📊", "📈", "💡", "🎯", "⭐", "❤️", "🔥", "✅", "🚀", "💼"
+    "📄", "📝", "📋", "📌", "📎", "📊", "📈", "💡", "🎯", "⭐", "❤️", "🔥", "✅", "🚀", "💼"
   ];
 
   return (
-    <div className="page-header">
+    <div className="page-header" style={{ position: "relative" }}>
       <div
         className="page-icon"
         onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-        title="아이콘 변경"
+        title="Change Icon"
       >
         {localIcon}
       </div>
 
       {showEmojiPicker && (
-        <div
-          style={{
-            position: "absolute",
-            background: "var(--bg-secondary)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-md)",
-            boxShadow: "var(--shadow-md)",
-            padding: "12px",
-            display: "grid",
-            gridTemplateColumns: "repeat(8, 1fr)",
-            gap: "4px",
-            zIndex: 100,
-          }}
-        >
-          {commonEmojis.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => handleIconChange(emoji)}
-              style={{
-                fontSize: "24px",
-                padding: "4px",
-                borderRadius: "var(--radius-sm)",
-                cursor: "pointer",
-                background: "transparent",
-                border: "none",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--bg-hover)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-              }}
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
+        <>
+          <div 
+            className="dropdown-overlay" 
+            onClick={() => setShowEmojiPicker(false)}
+            style={{ background: "transparent" }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: "60px",
+              left: "0",
+              background: "var(--surface)",
+              border: "1px solid var(--border-strong)",
+              borderRadius: "var(--radius-md)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              padding: "8px",
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: "4px",
+              zIndex: 100,
+              width: "200px",
+            }}
+          >
+            {commonEmojis.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => handleIconChange(emoji)}
+                style={{
+                  fontSize: "20px",
+                  padding: "6px",
+                  borderRadius: "var(--radius-sm)",
+                  cursor: "pointer",
+                  background: "transparent",
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--surface-subtle)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       <input
@@ -94,7 +107,7 @@ export default function PageHeader({ pageId, title, icon }: PageHeaderProps) {
         value={localTitle}
         onChange={(e) => setLocalTitle(e.target.value)}
         onBlur={() => handleTitleChange(localTitle)}
-        placeholder="제목 없음"
+        placeholder="Untitled"
       />
     </div>
   );

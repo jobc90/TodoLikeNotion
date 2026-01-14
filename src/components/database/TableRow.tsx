@@ -237,15 +237,15 @@ export default function TableRow({
       >
         {/* Row select checkbox with hover menu */}
         <td className="table-row-select">
-          {/* Hover menu button (3 dots) */}
-          <button
-            className={`table-row-hover-menu ${isHovered || menuOpen ? "visible" : ""}`}
-            onClick={handleMenuClick}
-            title="옵션"
-          >
-            ⋯
-          </button>
           <div className="table-row-checkbox">
+            {/* Hover menu button (3 dots) - Sliding Effect */}
+            <button
+              className={`sliding-menu-btn ${isHovered || menuOpen ? "visible" : ""}`}
+              onClick={handleMenuClick}
+              title="옵션"
+            >
+              ⋮
+            </button>
             <span className="table-row-drag-handle" title="드래그하여 순서 변경">
               ⋮⋮
             </span>

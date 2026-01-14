@@ -86,17 +86,70 @@ export default function BlockRenderer({
   }, [block.id, block.props.text]);
 
   const handleContentChange = useCallback(
-    (e: React.FormEvent<HTMLDivElement>) => {
+    async (e: React.FormEvent<HTMLDivElement>) => {
       const newText = e.currentTarget.textContent || "";
       textRef.current = newText;
+
+      // Markdown Shortcuts
+      // Only trigger if no slash menu open and we have a space
+      if (!showSlashMenu && newText.endsWith(" ")) {
+        const textBeforeSpace = newText.slice(0, -1);
+        
+        // Helper to convert and clean up
+        const convertBlock = async (type: BlockType, sliceLength: number) => {
+          // Remove the shortcut text
+          const cleanText = newText.slice(sliceLength);
+          
+          await updateBlock(block.id, {
+            type,
+            props: { 
+              text: cleanText.trim(),
+              checked: type === "todo" ? false : undefined,
+              expanded: type === "toggle" ? true : undefined
+            },
+          });
+          
+          if (contentRef.current) {
+            contentRef.current.textContent = cleanText.trim();
+            // Reset cursor to end (simplified for now)
+          }
+          onUpdate?.();
+        };
+
+        switch (textBeforeSpace) {
+          case "#":
+            await convertBlock("heading1", 2);
+            return;
+          case "##":
+            await convertBlock("heading2", 3);
+            return;
+          case "###":
+            await convertBlock("heading3", 4);
+            return;
+          case "-":
+          case "*":
+            await convertBlock("bullet", 2);
+            return;
+          case "[]":
+          case "[ ]":
+            await convertBlock("todo", textBeforeSpace.length + 1);
+            return;
+          case ">":
+          case '"':
+            await convertBlock("quote", 2);
+            return;
+          case "---":
+            await convertBlock("divider", 3);
+            return;
+        }
+      }
 
       // Detect slash command at start or after space
       const selection = window.getSelection();
       if (!selection || !contentRef.current) return;
 
       const text = newText;
-      const cursorPos = selection.anchorOffset;
-
+      
       // Check if "/" was just typed at start or after space
       if (text.endsWith("/") || text.includes(" /")) {
         const lastSlashIndex = text.lastIndexOf("/");
@@ -123,7 +176,7 @@ export default function BlockRenderer({
         }
       }
     },
-    [showSlashMenu]
+    [showSlashMenu, block.id, onUpdate]
   );
 
   const handleBlur = useCallback(async () => {
@@ -185,6 +238,21 @@ export default function BlockRenderer({
         return;
       }
 
+      // Handle Tab Indentation
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const currentLevel = localProps.level || 0;
+        const newLevel = e.shiftKey
+          ? Math.max(0, currentLevel - 1) // Outdent
+          : Math.min(3, currentLevel + 1); // Indent (max 3 levels for now)
+
+        if (currentLevel !== newLevel) {
+          setLocalProps((prev) => ({ ...prev, level: newLevel }));
+          await updateBlock(block.id, { props: { level: newLevel } });
+        }
+        return;
+      }
+
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         // Save current content first
@@ -192,21 +260,29 @@ export default function BlockRenderer({
         if (currentText !== block.props.text) {
           await updateBlock(block.id, { props: { text: currentText } });
         }
-        // Create new block
+        // Create new block with SAME nesting level
         await createBlock({
           pageId,
           type: "paragraph",
           order: block.order + 1,
+          props: { level: localProps.level }
         });
         onUpdate?.();
       } else if (e.key === "Backspace" && textRef.current === "") {
         e.preventDefault();
-        // Delete empty block
-        await deleteBlock(block.id);
-        onUpdate?.();
+        // If nested, outdent first, otherwise delete
+        const currentLevel = localProps.level || 0;
+        if (currentLevel > 0) {
+           const newLevel = currentLevel - 1;
+           setLocalProps((prev) => ({ ...prev, level: newLevel }));
+           await updateBlock(block.id, { props: { level: newLevel } });
+        } else {
+           await deleteBlock(block.id);
+           onUpdate?.();
+        }
       }
     },
-    [pageId, block.order, block.id, block.props.text, onUpdate, showSlashMenu]
+    [pageId, block.order, block.id, block.props.text, onUpdate, showSlashMenu, localProps.level]
   );
 
   // Context menu handlers
@@ -299,10 +375,14 @@ export default function BlockRenderer({
   };
 
   return (
-    <div className={`block ${isDragging ? "dragging" : ""}`} onContextMenu={handleContextMenu}>
+    <div 
+      className={`block ${isDragging ? "dragging" : ""}`} 
+      onContextMenu={handleContextMenu}
+      style={{ marginLeft: `${(localProps.level || 0) * 24}px` }}
+    >
       <div
         className="block-handle"
-        title="드래그하여 이동"
+        title="Drag to move"
         onPointerDown={(e) => dragControls.start(e)}
         style={{ touchAction: "none" }}
       >
@@ -343,7 +423,7 @@ export default function BlockRenderer({
               style={{ color: "var(--destructive)" }}
             >
               <span className="dropdown-item-icon">🗑️</span>
-              <span>삭제</span>
+              <span>Delete</span>
             </div>
           </div>
         </>
@@ -355,20 +435,20 @@ export default function BlockRenderer({
 function getPlaceholder(type: BlockType): string {
   switch (type) {
     case "heading1":
-      return "제목 1";
+      return "Heading 1";
     case "heading2":
-      return "제목 2";
+      return "Heading 2";
     case "heading3":
-      return "제목 3";
+      return "Heading 3";
     case "todo":
-      return "할 일";
+      return "To-do";
     case "toggle":
-      return "토글";
+      return "Toggle";
     case "bullet":
-      return "목록";
+      return "List";
     case "quote":
-      return "인용";
+      return "Quote";
     default:
-      return "'/' 명령어 또는 텍스트 입력...";
+      return "Type '/' for commands...";
   }
 }

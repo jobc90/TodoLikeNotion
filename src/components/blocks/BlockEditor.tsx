@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Reorder } from "framer-motion";
 import BlockRenderer from "./BlockRenderer";
 import FormattingToolbar from "./FormattingToolbar";
+import EmptyState from "@/components/ui/EmptyState";
 import type { Block, BlockType } from "@/types/block";
 import { createBlock, deleteBlock, reorderBlocks } from "@/actions/block.actions";
 
@@ -96,14 +97,14 @@ export default function BlockEditor({ pageId, initialBlocks }: BlockEditorProps)
   );
 
   const blockTypes: { type: BlockType; label: string; icon: string }[] = [
-    { type: "paragraph", label: "텍스트", icon: "📝" },
-    { type: "heading1", label: "제목 1", icon: "H1" },
-    { type: "heading2", label: "제목 2", icon: "H2" },
-    { type: "heading3", label: "제목 3", icon: "H3" },
-    { type: "todo", label: "할 일", icon: "☑️" },
-    { type: "bullet", label: "글머리 기호", icon: "•" },
-    { type: "quote", label: "인용", icon: "❝" },
-    { type: "divider", label: "구분선", icon: "➖" },
+    { type: "paragraph", label: "Text", icon: "T" },
+    { type: "heading1", label: "Heading 1", icon: "H1" },
+    { type: "heading2", label: "Heading 2", icon: "H2" },
+    { type: "heading3", label: "Heading 3", icon: "H3" },
+    { type: "todo", label: "To-do", icon: "☑" },
+    { type: "bullet", label: "Bulleted List", icon: "•" },
+    { type: "quote", label: "Quote", icon: "“" },
+    { type: "divider", label: "Divider", icon: "—" },
   ];
 
   return (
@@ -111,19 +112,15 @@ export default function BlockEditor({ pageId, initialBlocks }: BlockEditorProps)
       <FormattingToolbar />
 
       {blocks.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-title">빈 페이지</div>
-          <div className="empty-state-description">
-            Enter를 눌러 작성하거나, /를 입력해 명령어를 사용하세요
-          </div>
-          <button
-            className="btn btn-secondary"
-            style={{ marginTop: "24px" }}
-            onClick={() => handleAddBlock("paragraph")}
-          >
-            블록 추가
-          </button>
-        </div>
+        <EmptyState
+          title="Empty Page"
+          description="Type '/' for commands"
+          icon="📄"
+          action={{
+            label: "Add Text Block",
+            onClick: () => handleAddBlock("paragraph"),
+          }}
+        />
       ) : (
         <>
           <Reorder.Group
@@ -140,11 +137,17 @@ export default function BlockEditor({ pageId, initialBlocks }: BlockEditorProps)
                 onDragStart={() => setDraggedBlockId(block.id)}
                 onDragEnd={() => setDraggedBlockId(null)}
                 initial={false}
-                style={{ listStyle: "none" }}
+                style={{ listStyle: "none", position: "relative" }}
+                whileDrag={{
+                  scale: 1.02,
+                  boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+                  zIndex: 50,
+                  cursor: "grabbing",
+                }}
                 transition={{
                   type: "spring",
-                  stiffness: 500,
-                  damping: 35,
+                  stiffness: 400,
+                  damping: 30,
                 }}
               >
                 <BlockRenderer
@@ -160,18 +163,20 @@ export default function BlockEditor({ pageId, initialBlocks }: BlockEditorProps)
             ))}
           </Reorder.Group>
 
-          {/* Add Block Button */}
+          {/* Subtle Add Block Trigger */}
           <div
-            className="block"
-            style={{
-              cursor: "pointer",
-              padding: "8px 0",
-              color: "var(--ink-tertiary)",
-              fontSize: "14px",
-            }}
+            className="block-add-trigger"
             onClick={() => handleAddBlock("paragraph")}
+            style={{
+              padding: "12px 0",
+              opacity: 0,
+              cursor: "text",
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}
           >
-            <span style={{ opacity: 0.6 }}>+</span>
+            <span style={{ color: "var(--ink-tertiary)", fontSize: "14px" }}>+ Click to add block</span>
           </div>
         </>
       )}
@@ -184,12 +189,13 @@ export default function BlockEditor({ pageId, initialBlocks }: BlockEditorProps)
             position: "absolute",
             top: menuPosition.top,
             left: menuPosition.left,
-            background: "var(--bg-secondary)",
-            border: "1px solid var(--border)",
+            background: "var(--surface)",
+            border: "1px solid var(--border-strong)",
             borderRadius: "var(--radius-md)",
-            boxShadow: "var(--shadow-md)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             padding: "4px",
             zIndex: 1000,
+            minWidth: "180px",
           }}
         >
           {blockTypes.map(({ type, label, icon }) => (
@@ -199,11 +205,13 @@ export default function BlockEditor({ pageId, initialBlocks }: BlockEditorProps)
               style={{
                 width: "100%",
                 justifyContent: "flex-start",
-                padding: "8px 12px",
+                padding: "6px 10px",
+                fontSize: "13px",
+                gap: "8px",
               }}
               onClick={() => handleAddBlock(type)}
             >
-              <span style={{ width: "24px" }}>{icon}</span>
+              <span style={{ width: "20px", textAlign: "center", color: "var(--ink-secondary)" }}>{icon}</span>
               <span>{label}</span>
             </button>
           ))}

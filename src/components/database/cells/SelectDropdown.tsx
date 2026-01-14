@@ -141,7 +141,7 @@ export default function SelectDropdown({
                 <div
                   style={{
                     fontSize: 12,
-                    color: "var(--text-muted)",
+                    color: "var(--ink-tertiary)",
                     marginBottom: 8,
                   }}
                 >
@@ -152,13 +152,16 @@ export default function SelectDropdown({
                     <button
                       key={color}
                       onClick={() => handleAddOption(color)}
+                      className={`select-tag color-${color}`}
                       style={{
                         width: 24,
                         height: 24,
-                        borderRadius: 4,
-                        background: SELECT_COLOR_STYLES[color].bg,
                         border: "none",
                         cursor: "pointer",
+                        padding: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                       title={color}
                     />

@@ -93,16 +93,17 @@ export default function Sidebar({ pages, databases = [] }: SidebarProps) {
           position: "fixed",
           left: menuOpen.x,
           top: menuOpen.y,
-          minWidth: 140,
+          minWidth: 160,
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
         }}
       >
         <div
           className="dropdown-item"
           onClick={handleDelete}
-          style={{ color: "var(--destructive)" }}
+          style={{ color: "var(--destructive)", fontSize: "13px" }}
         >
-          <span className="dropdown-item-icon">🗑️</span>
-          <span>삭제</span>
+          <span className="dropdown-item-icon" style={{ fontSize: "14px" }}>🗑️</span>
+          <span>Delete</span>
         </div>
       </div>
     </>,
@@ -112,7 +113,7 @@ export default function Sidebar({ pages, databases = [] }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <span className="sidebar-logo">노트</span>
+        <div style={{ flex: 1 }} /> {/* Spacer to push toggle to right, or keep it left? "System" removed. */}
         <ThemeToggle />
       </div>
 
@@ -120,105 +121,96 @@ export default function Sidebar({ pages, databases = [] }: SidebarProps) {
         <input
           type="text"
           className="sidebar-search-input"
-          placeholder="검색..."
+          placeholder="Search..."
+          style={{
+            background: "transparent",
+            border: "none",
+            borderRadius: 0,
+            borderBottom: "1px solid var(--border)",
+            paddingLeft: 0,
+            fontSize: "13px",
+          }}
         />
       </div>
 
-      {/* Pages Section */}
-      <div className="sidebar-section">
-        <div className="sidebar-section-title">PAGES</div>
+      <div className="sidebar-scroll-area" style={{ flex: 1, overflowY: "auto", paddingBottom: "20px" }}>
+        {/* Pages Section */}
+        <div className="sidebar-section">
+          <div className="sidebar-section-title">Private</div>
+          <nav className="sidebar-list">
+            {pages.length === 0 ? (
+              <div className="sidebar-empty-hint">No pages</div>
+            ) : (
+              pages.map((page) => {
+                const isActive = pathname === `/pages/${page.id}`;
+                const isHovered = hoveredItemId === `page-${page.id}`;
+                const isMenuOpen = menuOpen?.type === "page" && menuOpen.id === page.id;
+                
+                return (
+                  <Link
+                    key={page.id}
+                    href={`/pages/${page.id}`}
+                    className={`sidebar-page-item ${isActive ? "active" : ""}`}
+                    onMouseEnter={() => setHoveredItemId(`page-${page.id}`)}
+                    onMouseLeave={() => setHoveredItemId(null)}
+                  >
+                    <button
+                      className={`sliding-menu-btn ${isHovered || isMenuOpen ? "visible" : ""}`}
+                      onClick={(e) => handleMenuClick("page", page.id, e)}
+                    >
+                      ⋮
+                    </button>
+                    <span className="sidebar-page-icon">{page.icon || "📄"}</span>
+                    <span className="sidebar-page-title">{page.title || "Untitled"}</span>
+                  </Link>
+                );
+              })
+            )}
+            <button className="sidebar-new-page" onClick={handleNewPage} disabled={isPending}>
+              + New Page
+            </button>
+          </nav>
+        </div>
+
+        {/* Databases Section */}
+        <div className="sidebar-section">
+          <div className="sidebar-section-title">Databases</div>
+          <nav className="sidebar-list">
+            {databases.length === 0 ? (
+              <div className="sidebar-empty-hint">No databases</div>
+            ) : (
+              databases.map((db) => {
+                const isActive = pathname === `/database/${db.id}`;
+                const isHovered = hoveredItemId === `db-${db.id}`;
+                const isMenuOpen = menuOpen?.type === "database" && menuOpen.id === db.id;
+                
+                return (
+                  <Link
+                    key={db.id}
+                    href={`/database/${db.id}`}
+                    className={`sidebar-page-item ${isActive ? "active" : ""}`}
+                    onMouseEnter={() => setHoveredItemId(`db-${db.id}`)}
+                    onMouseLeave={() => setHoveredItemId(null)}
+                  >
+                    <button
+                      className={`sliding-menu-btn ${isHovered || isMenuOpen ? "visible" : ""}`}
+                      onClick={(e) => handleMenuClick("database", db.id, e)}
+                    >
+                      ⋮
+                    </button>
+                    <span className="sidebar-page-icon">{db.icon || "📊"}</span>
+                    <span className="sidebar-page-title">{db.title || "Untitled Database"}</span>
+                  </Link>
+                );
+              })
+            )}
+            <button className="sidebar-new-page" onClick={handleNewDatabase} disabled={isPending}>
+              + New Database
+            </button>
+          </nav>
+        </div>
       </div>
 
-      <nav className="sidebar-pages" style={{ flex: "none", maxHeight: "40vh" }}>
-        {pages.length === 0 ? (
-          <div style={{ padding: "8px 14px", color: "var(--ink-tertiary)", fontSize: "13px" }}>
-            페이지가 없습니다
-          </div>
-        ) : (
-          pages.map((page) => {
-            const isActive = pathname === `/pages/${page.id}`;
-            const isHovered = hoveredItemId === `page-${page.id}`;
-            const isMenuOpen = menuOpen?.type === "page" && menuOpen.id === page.id;
-            return (
-              <Link
-                key={page.id}
-                href={`/pages/${page.id}`}
-                className={`sidebar-page-item ${isActive ? "active" : ""}`}
-                onMouseEnter={() => setHoveredItemId(`page-${page.id}`)}
-                onMouseLeave={() => setHoveredItemId(null)}
-              >
-                <button
-                  className={`hover-menu-btn ${isHovered || isMenuOpen ? "visible" : ""}`}
-                  onClick={(e) => handleMenuClick("page", page.id, e)}
-                  title="옵션"
-                >
-                  ⋯
-                </button>
-                <span className="sidebar-page-icon">{page.icon || "📄"}</span>
-                <span className="sidebar-page-title">{page.title}</span>
-              </Link>
-            );
-          })
-        )}
-      </nav>
-
-      <button
-        className="sidebar-new-page"
-        onClick={handleNewPage}
-        disabled={isPending}
-      >
-        <span>+</span>
-        <span>{isPending ? "생성 중..." : "새 페이지"}</span>
-      </button>
-
-      {/* Databases Section */}
-      <div className="sidebar-section" style={{ marginTop: 8 }}>
-        <div className="sidebar-section-title">DATABASES</div>
-      </div>
-
-      <nav className="sidebar-pages" style={{ flex: 1 }}>
-        {databases.length === 0 ? (
-          <div style={{ padding: "8px 14px", color: "var(--ink-tertiary)", fontSize: "13px" }}>
-            데이터베이스가 없습니다
-          </div>
-        ) : (
-          databases.map((db) => {
-            const isActive = pathname === `/database/${db.id}`;
-            const isHovered = hoveredItemId === `db-${db.id}`;
-            const isMenuOpen = menuOpen?.type === "database" && menuOpen.id === db.id;
-            return (
-              <Link
-                key={db.id}
-                href={`/database/${db.id}`}
-                className={`sidebar-page-item ${isActive ? "active" : ""}`}
-                onMouseEnter={() => setHoveredItemId(`db-${db.id}`)}
-                onMouseLeave={() => setHoveredItemId(null)}
-              >
-                <button
-                  className={`hover-menu-btn ${isHovered || isMenuOpen ? "visible" : ""}`}
-                  onClick={(e) => handleMenuClick("database", db.id, e)}
-                  title="옵션"
-                >
-                  ⋯
-                </button>
-                <span className="sidebar-page-icon">{db.icon || "📊"}</span>
-                <span className="sidebar-page-title">{db.title}</span>
-              </Link>
-            );
-          })
-        )}
-      </nav>
-
-      <button
-        className="sidebar-new-page"
-        onClick={handleNewDatabase}
-        disabled={isPending}
-      >
-        <span>+</span>
-        <span>{isPending ? "생성 중..." : "새 데이터베이스"}</span>
-      </button>
-
-      {/* Menu Portal */}
       {menuPortal}
     </aside>
   );

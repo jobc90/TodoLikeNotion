@@ -275,13 +275,13 @@ export default function TableHeader({
             onMouseLeave={() => setHoveredColumnId(null)}
           >
             <div className="table-header-content">
-              {/* Hover menu button (3 dots) */}
+              {/* Hover menu button (3 dots) - Sliding Effect */}
               <button
-                className={`hover-menu-btn ${hoveredColumnId === property.id || menuOpen?.propertyId === property.id ? "visible" : ""}`}
+                className={`sliding-menu-btn ${hoveredColumnId === property.id || menuOpen?.propertyId === property.id ? "visible" : ""}`}
                 onClick={(e) => handleMenuClick(property.id, e)}
                 title="옵션"
               >
-                ⋯
+                ⋮
               </button>
               <span className="table-header-icon">
                 {PROPERTY_TYPE_ICONS[property.type]}
