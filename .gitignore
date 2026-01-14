@@ -46,3 +46,8 @@ next-env.d.ts
 *.db-journal
 *.db-wal
 !prisma/dev.db
+
+# Agent / Tools
+.antigravity/
+.agent/
+.claude/
