@@ -1,36 +1,266 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📝 TodoLikeNotion
 
-## Getting Started
+Notion처럼 사용할 수 있는 할일 관리 & 데이터베이스 앱입니다.
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-16.1.1-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![SQLite](https://img.shields.io/badge/SQLite-Local-green)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
+---
+
+## ✨ 주요 기능
+
+### 📄 페이지 에디터
+- 블록 기반 편집 (Notion 스타일)
+- 마크다운 단축키 지원 (`#`, `-`, `[]`, `>` 등)
+- 슬래시 명령어 (`/`)로 블록 타입 변경
+- 내부 링크 `[[Page Name]]` 문법 지원
+- 드래그 앤 드롭으로 블록 순서 변경
+
+### 📊 데이터베이스
+- **테이블 뷰**: 엑셀처럼 데이터 관리
+- **칸반 보드**: 드래그로 상태 변경
+- **캘린더 뷰**: 주간/월간 일정 보기
+- 다양한 속성 타입: 텍스트, 숫자, 선택, 날짜, 체크박스, URL
+- 필터/정렬 기능
+
+### 🕸️ 그래프 뷰
+- 페이지 간 연결을 시각적으로 표시
+- 줌/팬 인터랙션
+
+### 🎨 UI/UX
+- 다크모드/라이트모드 지원
+- 키보드 단축키 (Cmd+K 검색)
+- 한국어 인터페이스
+
+---
+
+## 🚀 설치 가이드
+
+### 1단계: 필요한 프로그램 설치
+
+#### Node.js 설치 (v20 이상 필요)
+
+**macOS:**
+```bash
+# Homebrew가 없다면 먼저 설치
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Node.js 설치
+brew install node
+```
+
+**Windows:**
+1. https://nodejs.org 에서 LTS 버전 다운로드
+2. 설치 파일 실행
+3. "Next" 버튼을 계속 클릭하여 설치 완료
+
+**설치 확인:**
+```bash
+node --version
+# v20.0.0 이상이면 OK!
+
+npm --version
+# 10.0.0 이상이면 OK!
+```
+
+---
+
+### 2단계: 프로젝트 다운로드
+
+```bash
+# 원하는 폴더로 이동
+cd ~/Desktop
+
+# 프로젝트 다운로드
+git clone https://github.com/jobc90/TodoLikeNotion.git
+
+# 프로젝트 폴더로 이동
+cd TodoLikeNotion
+```
+
+💡 **git이 없다면?**
+- GitHub에서 "Code" → "Download ZIP" 클릭
+- 압축 해제 후 해당 폴더에서 터미널 열기
+
+---
+
+### 3단계: 패키지 설치
+
+```bash
+npm install
+```
+
+⏳ 약 1-2분 정도 기다리세요. 완료되면 아래와 같은 메시지가 나옵니다:
+```
+added XXX packages in XXs
+```
+
+---
+
+### 4단계: 데이터베이스 설정
+
+```bash
+# Prisma 클라이언트 생성
+npx prisma generate
+
+# 데이터베이스 테이블 생성
+npx prisma migrate dev --name init
+```
+
+💡 `Enter a name for the new migration:` 이라고 물어보면 그냥 Enter 키를 누르세요.
+
+---
+
+### 5단계: 앱 실행! 🎉
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+성공하면 이렇게 나옵니다:
+```
+▲ Next.js 16.1.1
+- Local: http://localhost:3000
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**브라우저에서 http://localhost:3000 열기!**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🎮 사용법
 
-To learn more about Next.js, take a look at the following resources:
+### 새 페이지 만들기
+1. 사이드바에서 `+ 새 페이지` 클릭
+2. 제목 입력
+3. 블록에서 텍스트 입력 시작
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 블록 타입 변경
+- `/` 입력 후 원하는 블록 선택
+- 또는 마크다운 단축키 사용:
+  - `# ` → 제목 1
+  - `## ` → 제목 2
+  - `- ` → 글머리 기호
+  - `[] ` → 할일 체크박스
+  - `> ` → 인용
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 데이터베이스 사용
+1. 사이드바에서 `+ 새 데이터베이스` 클릭
+2. 컬럼 헤더 클릭으로 속성 추가/수정
+3. 뷰 전환: 테이블 📋 / 칸반 📌 / 캘린더 📅
 
-## Deploy on Vercel
+### 키보드 단축키
+| 단축키 | 기능 |
+|--------|------|
+| `Cmd/Ctrl + K` | 검색 |
+| `Cmd/Ctrl + N` | 새 페이지 |
+| `Tab` | 블록 들여쓰기 |
+| `Shift + Tab` | 블록 내어쓰기 |
+| `Ctrl + C/V/X` | 셀 복사/붙여넣기/잘라내기 |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🛠 개발 명령어
+
+```bash
+# 개발 서버 실행
+npm run dev
+
+# 프로덕션 빌드
+npm run build
+
+# 프로덕션 서버 실행
+npm start
+
+# 코드 검사
+npm run lint
+
+# 데이터베이스 GUI 열기
+npx prisma studio
+```
+
+---
+
+## 📁 프로젝트 구조
+
+```
+TodoLikeNotion/
+├── src/
+│   ├── app/                  # 페이지 라우트
+│   │   ├── page.tsx          # 홈
+│   │   ├── pages/[pageId]/   # 페이지 에디터
+│   │   ├── database/[id]/    # 데이터베이스 뷰
+│   │   └── graph/            # 그래프 뷰
+│   ├── components/           # React 컴포넌트
+│   │   ├── blocks/           # 블록 에디터
+│   │   ├── database/         # 데이터베이스 뷰
+│   │   ├── graph/            # 그래프 시각화
+│   │   └── layout/           # 레이아웃
+│   ├── actions/              # 서버 액션 (DB CRUD)
+│   └── types/                # TypeScript 타입
+├── prisma/
+│   ├── schema.prisma         # DB 스키마
+│   └── dev.db                # SQLite 데이터베이스
+└── package.json
+```
+
+---
+
+## ❓ 문제 해결
+
+### "command not found: npm"
+→ Node.js가 설치되지 않았습니다. 1단계를 다시 확인하세요.
+
+### "ENOENT: no such file or directory"
+→ 프로젝트 폴더 안에서 명령어를 실행했는지 확인하세요.
+```bash
+cd TodoLikeNotion
+```
+
+### "prisma: command not found"
+→ 패키지 설치가 안 됐습니다.
+```bash
+npm install
+```
+
+### 데이터베이스 오류
+→ 데이터베이스를 초기화하세요.
+```bash
+npx prisma migrate reset
+```
+
+### 포트 3000이 사용 중
+→ 다른 포트로 실행하세요.
+```bash
+npm run dev -- -p 3001
+```
+
+### Turbopack 캐시 오류
+→ 캐시를 삭제하세요.
+```bash
+rm -rf .next
+npm run dev
+```
+
+---
+
+## 📄 라이선스
+
+MIT License
+
+---
+
+## 🙏 기여
+
+이슈와 PR을 환영합니다!
+
+1. Fork
+2. 브랜치 생성 (`git checkout -b feature/amazing-feature`)
+3. 커밋 (`git commit -m 'Add amazing feature'`)
+4. Push (`git push origin feature/amazing-feature`)
+5. Pull Request 생성
+
+---
+
+Made with ❤️ by [jobc90](https://github.com/jobc90)
