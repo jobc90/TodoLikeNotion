@@ -169,7 +169,7 @@ export default function CommandPalette({ pages, databases }: CommandPaletteProps
                         key={page.id}
                         value={`page-${page.id}-${page.title}`}
                         onSelect={() =>
-                          handleSelect(() => router.push(`/pages/${page.id}`))
+                          handleSelect(() => router.push(`/workspace/${page.id}`))
                         }
                         className="command-palette-item"
                       >
@@ -194,7 +194,7 @@ export default function CommandPalette({ pages, databases }: CommandPaletteProps
                         key={page.id}
                         value={`page-${page.id}-${page.title}`}
                         onSelect={() =>
-                          handleSelect(() => router.push(`/pages/${page.id}`))
+                          handleSelect(() => router.push(`/workspace/${page.id}`))
                         }
                         className="command-palette-item"
                       >
@@ -216,7 +216,7 @@ export default function CommandPalette({ pages, databases }: CommandPaletteProps
                         key={database.id}
                         value={`database-${database.id}-${database.title}`}
                         onSelect={() =>
-                          handleSelect(() => router.push(`/databases/${database.id}`))
+                          handleSelect(() => router.push(`/workspace/database/${database.id}`))
                         }
                         className="command-palette-item"
                       >

@@ -86,7 +86,7 @@ export async function updatePage(pageId: string, data: UpdatePageDto) {
     },
   });
   revalidatePath("/");
-  revalidatePath(`/pages/${pageId}`);
+  revalidatePath(`/workspace/${pageId}`, "page");
   return page;
 }
 

@@ -7,7 +7,7 @@ import BlockRenderer from "./BlockRenderer";
 import FormattingToolbar from "./FormattingToolbar";
 import EmptyState from "@/components/ui/EmptyState";
 import type { Block, BlockType } from "@/types/block";
-import { createBlock, deleteBlock, reorderBlocks } from "@/actions/block.actions";
+import { createBlock, deleteBlockQuiet, reorderBlocksQuiet } from "@/actions/block.actions";
 
 interface BlockEditorProps {
   pageId: string;
@@ -28,35 +28,40 @@ export default function BlockEditor({ pageId, initialBlocks }: BlockEditorProps)
   }, [router]);
 
   // Handle block deletion with optimistic update
+  // router.refresh() 제거 - 로컬 상태가 이미 최신이므로 불필요
   const handleDeleteBlock = useCallback(
     async (blockId: string) => {
-      // Optimistic update
+      // Optimistic update - 즉시 UI 반영
       setBlocks((prev) => prev.filter((b) => b.id !== blockId));
 
+      // 서버만 동기화 (revalidatePath 없는 경량 액션)
       startTransition(async () => {
-        await deleteBlock(blockId);
-        router.refresh();
+        await deleteBlockQuiet(blockId);
+        // router.refresh() 제거!
       });
     },
-    [router]
+    []
   );
 
   // Handle drag and drop reorder
+  // router.refresh() 제거 - 로컬 상태가 이미 최신이므로 불필요
   const handleReorder = useCallback(
     (newBlocks: Block[]) => {
+      // Optimistic update - 즉시 UI 반영
       setBlocks(newBlocks);
 
-      // Debounce server update
+      // 서버만 동기화 (revalidatePath 없는 경량 액션)
       startTransition(async () => {
         const blockOrders = newBlocks.map((b, idx) => ({ id: b.id, order: idx }));
-        await reorderBlocks(pageId, blockOrders);
-        router.refresh();
+        await reorderBlocksQuiet(blockOrders);
+        // router.refresh() 제거!
       });
     },
-    [pageId, router]
+    []
   );
 
   // Handle block reorder with optimistic update (for keyboard controls)
+  // router.refresh() 제거 - 로컬 상태가 이미 최신이므로 불필요
   const handleMoveBlock = useCallback(
     async (blockId: string, direction: "up" | "down") => {
       const currentIndex = blocks.findIndex((b) => b.id === blockId);
@@ -65,20 +70,20 @@ export default function BlockEditor({ pageId, initialBlocks }: BlockEditorProps)
       const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
       if (newIndex < 0 || newIndex >= blocks.length) return;
 
-      // Optimistic update
+      // Optimistic update - 즉시 UI 반영
       const newBlocks = [...blocks];
       const [removed] = newBlocks.splice(currentIndex, 1);
       newBlocks.splice(newIndex, 0, removed);
       setBlocks(newBlocks);
 
-      // Update orders on server
+      // 서버만 동기화 (revalidatePath 없는 경량 액션)
       startTransition(async () => {
         const blockOrders = newBlocks.map((b, idx) => ({ id: b.id, order: idx }));
-        await reorderBlocks(pageId, blockOrders);
-        router.refresh();
+        await reorderBlocksQuiet(blockOrders);
+        // router.refresh() 제거!
       });
     },
-    [blocks, pageId, router]
+    [blocks]
   );
 
   const handleAddBlock = useCallback(

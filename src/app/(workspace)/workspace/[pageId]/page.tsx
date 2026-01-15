@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
+import WorkspaceLayout from "@/components/layout/WorkspaceLayout";
 import BlockEditor from "@/components/blocks/BlockEditor";
 import PageHeader from "./PageHeader";
 import { getPages, getPageWithBlocks } from "@/actions/page.actions";
@@ -32,16 +32,13 @@ export default async function PageView({ params }: PageProps) {
   }));
 
   return (
-    <div className="app-container">
-      <Sidebar pages={pages} databases={databases} />
-      <main className="main-content">
-        <PageHeader
-          pageId={pageData.id}
-          title={pageData.title}
-          icon={pageData.icon}
-        />
-        <BlockEditor pageId={pageData.id} initialBlocks={blocks} />
-      </main>
-    </div>
+    <WorkspaceLayout pages={pages} databases={databases}>
+      <PageHeader
+        pageId={pageData.id}
+        title={pageData.title}
+        icon={pageData.icon}
+      />
+      <BlockEditor pageId={pageData.id} initialBlocks={blocks} />
+    </WorkspaceLayout>
   );
 }

@@ -263,7 +263,7 @@ export default function GraphView({ nodes: initialNodes, edges }: GraphViewProps
       const node = findNodeAt(x, y);
 
       if (node && node.id === dragging.nodeId) {
-        router.push(`/pages/${node.id}`);
+        router.push(`/workspace/${node.id}`);
       }
     }
 

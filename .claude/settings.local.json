@@ -22,7 +22,27 @@
       "Bash(ssh-keygen:*)",
       "Bash(git pull:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx next lint)"
+      "Bash(npx next lint)",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(DB_PATH=\"/Users/jobc/sideDev/TodoLikeNotion/prisma/dev.db\":*)",
+      "Bash(echo:*)",
+      "Skill(vs-design-diverge:VS:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Skill(prometheus)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm prisma generate:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm add:*)",
+      "Bash(test:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm run dev)",
+      "Bash(kill:*)",
+      "Bash(curl:*)",
+      "Skill(vs-design-diverge)"
     ]
   }
 }

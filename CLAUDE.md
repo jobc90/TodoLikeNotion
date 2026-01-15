@@ -9,17 +9,17 @@ A Notion-like todo management application with a block-based document structure.
 ## Commands
 
 ```bash
-npm run dev       # Start development server at localhost:3000
-npm run build     # Build for production
-npm start         # Start production server
-npm run lint      # Run ESLint
+pnpm dev          # Start development server at localhost:3000
+pnpm build        # Build for production
+pnpm start        # Start production server
+pnpm lint         # Run ESLint
 ```
 
 **Database commands:**
 ```bash
-npx prisma migrate dev    # Run migrations
-npx prisma generate       # Regenerate Prisma client
-npx prisma studio         # Open database GUI
+pnpm prisma migrate dev    # Run migrations
+pnpm prisma generate       # Regenerate Prisma client
+pnpm prisma studio         # Open database GUI
 ```
 
 ## Architecture

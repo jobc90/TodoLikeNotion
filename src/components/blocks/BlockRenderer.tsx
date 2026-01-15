@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, KeyboardEvent } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, KeyboardEvent } from "react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import sanitizeHtml from "sanitize-html";
 import type { Block, BlockType, BlockProps } from "@/types/block";
-import { updateBlock, createBlock, deleteBlock } from "@/actions/block.actions";
+import { updateBlock, createBlock, deleteBlock, updateBlockText, updateBlockProps } from "@/actions/block.actions";
+import { debounce } from "@/lib/debounce";
 import SlashCommands from "./SlashCommands";
 import PageLinkPopover from "./PageLinkPopover";
 
@@ -59,40 +60,66 @@ export default function BlockRenderer({
   const localDragControls = useDragControls();
   const dragControls = externalDragControls || localDragControls;
 
+  // === 버그 수정: Dirty Flag 패턴 ===
+  // 로컬에서 수정 중인 상태를 서버 응답이 덮어쓰지 못하도록 보호
+  const isDirtyRef = useRef(false);
+  const lastSavedTextRef = useRef(block.props.text || "");
+
+  // 디바운스된 저장 함수 (500ms) - revalidatePath 없는 경량 액션 사용
+  const debouncedSave = useMemo(
+    () =>
+      debounce(async (blockId: string, text: string) => {
+        if (text !== lastSavedTextRef.current) {
+          try {
+            await updateBlockText(blockId, text);
+            lastSavedTextRef.current = text;
+            isDirtyRef.current = false;
+          } catch (error) {
+            console.error("Failed to save block text:", error);
+          }
+        }
+      }, 500),
+    []
+  );
+
   // Sync local state when block props change from server
+  // 단, 로컬에서 수정 중일 때는 서버 상태로 덮어쓰지 않음
   useEffect(() => {
-    setLocalProps(block.props);
-    textRef.current = block.props.text || "";
+    if (!isDirtyRef.current) {
+      // 수정 중이 아닐 때만 서버 상태로 동기화
+      setLocalProps(block.props);
+      textRef.current = block.props.text || "";
+      lastSavedTextRef.current = block.props.text || "";
+    }
   }, [block.props]);
 
-  // Save text when component unmounts or before page navigation
+  // 컴포넌트 언마운트 시 대기 중인 저장 즉시 실행
   useEffect(() => {
-    const saveCurrentText = () => {
-      const currentText = textRef.current;
-      if (currentText !== block.props.text) {
-        // Use synchronous update for beforeunload
-        updateBlock(block.id, { props: { text: currentText } });
-      }
+    return () => {
+      debouncedSave.flush();
     };
+  }, [debouncedSave]);
 
-    // Handle browser navigation/close
+  // beforeunload 핸들러 - 브라우저 닫기/새로고침 시
+  useEffect(() => {
     const handleBeforeUnload = () => {
-      saveCurrentText();
+      debouncedSave.flush();
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
-
-    // Cleanup - save on unmount (page navigation within app)
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      saveCurrentText();
     };
-  }, [block.id, block.props.text]);
+  }, [debouncedSave]);
 
   const handleContentChange = useCallback(
     async (e: React.FormEvent<HTMLDivElement>) => {
       const newText = e.currentTarget.textContent || "";
       textRef.current = newText;
+      isDirtyRef.current = true; // 수정 중 플래그 설정
+
+      // 디바운스된 자동 저장 트리거
+      debouncedSave(block.id, newText);
 
       // Markdown Shortcuts
       // Only trigger if no slash menu open and we have a space
@@ -212,28 +239,27 @@ export default function BlockRenderer({
         }
       }
     },
-    [showSlashMenu, showPageLinkPopover, block.id, onUpdate]
+    [showSlashMenu, showPageLinkPopover, block.id, onUpdate, debouncedSave]
   );
 
-  const handleBlur = useCallback(async () => {
+  const handleBlur = useCallback(() => {
     setIsEditing(false);
-    const newText = textRef.current;
-    if (newText !== block.props.text) {
-      setLocalProps((prev) => ({ ...prev, text: newText }));
-      await updateBlock(block.id, { props: { text: newText } });
-    }
-  }, [block.id, block.props.text]);
+    // 대기 중인 저장 즉시 실행
+    debouncedSave.flush();
+  }, [debouncedSave]);
 
   const handleCheckboxToggle = useCallback(async () => {
     const newChecked = !localProps.checked;
     setLocalProps((prev) => ({ ...prev, checked: newChecked }));
-    await updateBlock(block.id, { props: { checked: newChecked } });
+    // 경량 액션 사용 (revalidatePath 없음)
+    await updateBlockProps(block.id, { checked: newChecked });
   }, [block.id, localProps.checked]);
 
   const handleToggleExpand = useCallback(async () => {
     const newExpanded = !localProps.expanded;
     setLocalProps((prev) => ({ ...prev, expanded: newExpanded }));
-    await updateBlock(block.id, { props: { expanded: newExpanded } });
+    // 경량 액션 사용 (revalidatePath 없음)
+    await updateBlockProps(block.id, { expanded: newExpanded });
   }, [block.id, localProps.expanded]);
 
   const handleSlashCommandSelect = useCallback(
@@ -364,11 +390,23 @@ export default function BlockRenderer({
     onUpdate?.();
   }, [block.id, onUpdate]);
 
+  // Helper function to escape HTML
+  const escapeHtml = (text: string): string => {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
   // Helper function to convert [[Page Name]] to HTML links
   const parsePageLinks = (text: string): string => {
     // Convert [[Page Name]] to clickable links
     return text.replace(/\[\[([^\]]+)\]\]/g, (match, pageName) => {
-      return `<a href="/pages/${encodeURIComponent(pageName)}" class="page-link" data-page-name="${pageName}" title="Go to ${pageName}">${pageName}</a>`;
+      const encodedName = encodeURIComponent(pageName);
+      const displayName = escapeHtml(pageName);
+      return `<a href="/workspace/${encodedName}" class="page-link" data-page-name="${pageName}" title="Go to ${pageName}">${displayName}</a>`;
     });
   };
 
@@ -396,7 +434,7 @@ export default function BlockRenderer({
             const pageName = target.getAttribute("data-page-name");
             if (pageName) {
               // Navigate to the page
-              window.location.href = `/pages/${encodeURIComponent(pageName)}`;
+              window.location.href = `/workspace/${encodeURIComponent(pageName)}`;
             }
           }
         },

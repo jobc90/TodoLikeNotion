@@ -46,7 +46,7 @@ export async function createBlock(data: CreateBlockDto) {
     },
   });
 
-  revalidatePath(`/pages/${data.pageId}`);
+  revalidatePath(`/workspace/${data.pageId}`);
   return {
     ...block,
     props: JSON.parse(block.props) as BlockProps,
@@ -77,7 +77,7 @@ export async function updateBlock(blockId: string, data: UpdateBlockDto) {
     },
   });
 
-  revalidatePath(`/pages/${block.pageId}`);
+  revalidatePath(`/workspace/${block.pageId}`);
   return {
     ...block,
     props: JSON.parse(block.props) as BlockProps,
@@ -86,11 +86,21 @@ export async function updateBlock(blockId: string, data: UpdateBlockDto) {
 
 // 블록 삭제
 export async function deleteBlock(blockId: string) {
+  // 먼저 블록 존재 여부 확인
+  const existingBlock = await prisma.block.findUnique({
+    where: { id: blockId },
+  });
+
+  if (!existingBlock) {
+    // 이미 삭제된 블록이면 무시
+    return null;
+  }
+
   const block = await prisma.block.delete({
     where: { id: blockId },
   });
 
-  revalidatePath(`/pages/${block.pageId}`);
+  revalidatePath(`/workspace/${block.pageId}`);
   return block;
 }
 
@@ -108,7 +118,7 @@ export async function reorderBlocks(
     )
   );
 
-  revalidatePath(`/pages/${pageId}`);
+  revalidatePath(`/workspace/${pageId}`);
 }
 
 // 블록 타입 변경
@@ -118,12 +128,121 @@ export async function changeBlockType(blockId: string, newType: string) {
     data: { type: newType },
   });
 
-  revalidatePath(`/pages/${block.pageId}`);
+  revalidatePath(`/workspace/${block.pageId}`);
   return {
     ...block,
     props: JSON.parse(block.props) as BlockProps,
   };
 }
+
+// ==================== 경량 업데이트 (revalidatePath 없음) ====================
+// 텍스트 입력 시 사용 - 로컬 상태가 이미 최신이므로 페이지 갱신 불필요
+
+/**
+ * 블록 텍스트만 업데이트 (revalidatePath 호출 안 함)
+ * - 텍스트 입력 시 디바운스된 자동 저장에 사용
+ * - 로컬 상태가 이미 최신이므로 서버 갱신만 수행
+ */
+export async function updateBlockText(blockId: string, text: string) {
+  const existingBlock = await prisma.block.findUnique({
+    where: { id: blockId },
+  });
+
+  if (!existingBlock) {
+    throw new Error("Block not found");
+  }
+
+  const existingProps = JSON.parse(existingBlock.props) as BlockProps;
+  const newProps = { ...existingProps, text };
+
+  await prisma.block.update({
+    where: { id: blockId },
+    data: {
+      props: JSON.stringify(newProps),
+      plainText: extractPlainText(newProps),
+    },
+  });
+
+  // revalidatePath 호출하지 않음!
+  // 로컬 상태가 이미 최신이므로 페이지 갱신 불필요
+}
+
+/**
+ * 블록 props만 업데이트 (revalidatePath 호출 안 함)
+ * - 체크박스 토글, 토글 확장 등에 사용
+ * - 로컬 상태가 이미 최신이므로 서버 갱신만 수행
+ */
+export async function updateBlockProps(
+  blockId: string,
+  propsUpdate: Partial<BlockProps>
+) {
+  const existingBlock = await prisma.block.findUnique({
+    where: { id: blockId },
+  });
+
+  if (!existingBlock) {
+    throw new Error("Block not found");
+  }
+
+  const existingProps = JSON.parse(existingBlock.props) as BlockProps;
+  const newProps = { ...existingProps, ...propsUpdate };
+
+  await prisma.block.update({
+    where: { id: blockId },
+    data: {
+      props: JSON.stringify(newProps),
+      plainText: extractPlainText(newProps),
+    },
+  });
+
+  // revalidatePath 호출하지 않음!
+}
+
+/**
+ * 블록 순서만 재정렬 (revalidatePath 호출 안 함)
+ * - 드래그앤드롭 시 사용
+ * - 로컬 상태가 이미 최신이므로 서버 갱신만 수행
+ */
+export async function reorderBlocksQuiet(
+  blockOrders: { id: string; order: number }[]
+) {
+  await prisma.$transaction(
+    blockOrders.map(({ id, order }) =>
+      prisma.block.update({
+        where: { id },
+        data: { order },
+      })
+    )
+  );
+
+  // revalidatePath 호출하지 않음!
+}
+
+/**
+ * 블록 삭제 (revalidatePath 호출 안 함)
+ * - optimistic update 후 사용
+ * - 로컬 상태가 이미 업데이트되었으므로 서버만 동기화
+ */
+export async function deleteBlockQuiet(blockId: string) {
+  // 먼저 블록 존재 여부 확인
+  const existingBlock = await prisma.block.findUnique({
+    where: { id: blockId },
+  });
+
+  if (!existingBlock) {
+    // 이미 삭제된 블록이면 무시 (optimistic update로 인한 중복 요청 가능)
+    return null;
+  }
+
+  const block = await prisma.block.delete({
+    where: { id: blockId },
+  });
+
+  // revalidatePath 호출하지 않음!
+  return block;
+}
+
+// ==================== 기존 함수 (구조 변경용) ====================
 
 // 블록을 다른 위치에 삽입 (드래그 앤 드롭용)
 export async function insertBlockAfter(

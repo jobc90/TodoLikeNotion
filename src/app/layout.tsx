@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
 import "./globals.css";
-import CommandPaletteWrapper from "@/components/CommandPaletteWrapper";
-import KeyboardShortcutsProvider from "@/components/KeyboardShortcutsProvider";
 
-export const metadata: Metadata = {
-  title: "Notion-like Todo",
-  description: "Block-based todo management app like Notion",
+export const metadata = {
+  title: "TodoLikeNotion",
+  description: "Notion 스타일 할일 관리 & 데이터베이스 앱",
 };
 
 export default function RootLayout({
@@ -15,12 +12,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body>
-        <KeyboardShortcutsProvider>
-          {children}
-          <CommandPaletteWrapper />
-        </KeyboardShortcutsProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

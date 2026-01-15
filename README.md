@@ -1,10 +1,13 @@
 # 📝 TodoLikeNotion
 
 Notion처럼 사용할 수 있는 할일 관리 & 데이터베이스 앱입니다.
+웨딩 영상 제작 비즈니스를 위한 **Cinematic Editorial** 테마의 관리자 대시보드를 포함합니다.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16.1.1-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-Local-green)
+![Zustand](https://img.shields.io/badge/Zustand-5.0-orange)
+![Vitest](https://img.shields.io/badge/Vitest-3.1-green)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
@@ -33,6 +36,19 @@ Notion처럼 사용할 수 있는 할일 관리 & 데이터베이스 앱입니�
 - 다크모드/라이트모드 지원
 - 키보드 단축키 (Cmd+K 검색)
 - 한국어 인터페이스
+
+### 📊 Admin 대시보드 (메인 페이지)
+- **Cinematic Editorial** 테마 디자인
+- 주문 관리 및 상태 추적
+- 고객 관리
+- 매출 통계 요약
+
+### 🎬 Workspace (Screenplay Editor 테마)
+- **Cinematic Editorial** 확장 테마
+- 영화적 편집 인터페이스
+- Film grain 오버레이 효과
+- 접이식 사이드바 네비게이션
+- 페이지/데이터베이스 컨텍스트 메뉴
 
 ---
 
@@ -86,16 +102,17 @@ cd TodoLikeNotion
 
 ---
 
-### 3단계: 패키지 설치
+### 3단계: pnpm 설치 및 패키지 설치
 
 ```bash
-npm install
+# pnpm 설치 (없는 경우)
+npm install -g pnpm
+
+# 패키지 설치
+pnpm install
 ```
 
-⏳ 약 1-2분 정도 기다리세요. 완료되면 아래와 같은 메시지가 나옵니다:
-```
-added XXX packages in XXs
-```
+⏳ 약 1-2분 정도 기다리세요. 완료되면 패키지 설치 완료 메시지가 나옵니다.
 
 ---
 
@@ -116,7 +133,7 @@ npx prisma migrate dev --name init
 ### 5단계: 앱 실행! 🎉
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 성공하면 이렇게 나옵니다:
@@ -126,6 +143,8 @@ npm run dev
 ```
 
 **브라우저에서 http://localhost:3000 열기!**
+
+> 💡 메인 페이지는 Admin 대시보드입니다. 페이지 에디터는 `/workspace/[pageId]`에서 확인할 수 있습니다.
 
 ---
 
@@ -165,19 +184,25 @@ npm run dev
 
 ```bash
 # 개발 서버 실행
-npm run dev
+pnpm run dev
 
 # 프로덕션 빌드
-npm run build
+pnpm run build
 
 # 프로덕션 서버 실행
-npm start
+pnpm start
 
 # 코드 검사
-npm run lint
+pnpm run lint
+
+# 테스트 실행
+pnpm test
+
+# 테스트 커버리지
+pnpm test:coverage
 
 # 데이터베이스 GUI 열기
-npx prisma studio
+pnpm exec prisma studio
 ```
 
 ---
@@ -187,21 +212,42 @@ npx prisma studio
 ```
 TodoLikeNotion/
 ├── src/
-│   ├── app/                  # 페이지 라우트
-│   │   ├── page.tsx          # 홈
-│   │   ├── pages/[pageId]/   # 페이지 에디터
-│   │   ├── database/[id]/    # 데이터베이스 뷰
-│   │   └── graph/            # 그래프 뷰
-│   ├── components/           # React 컴포넌트
-│   │   ├── blocks/           # 블록 에디터
-│   │   ├── database/         # 데이터베이스 뷰
-│   │   ├── graph/            # 그래프 시각화
-│   │   └── layout/           # 레이아웃
-│   ├── actions/              # 서버 액션 (DB CRUD)
-│   └── types/                # TypeScript 타입
+│   ├── app/                           # 페이지 라우트
+│   │   ├── layout.tsx                 # 루트 레이아웃
+│   │   ├── (admin)/                   # Admin 라우트 그룹
+│   │   │   ├── layout.tsx             # Admin 레이아웃
+│   │   │   ├── page.tsx               # 대시보드 (메인)
+│   │   │   ├── orders/                # 주문 관리
+│   │   │   └── customers/             # 고객 관리
+│   │   └── (workspace)/               # Workspace 라우트 그룹
+│   │       ├── layout.tsx             # Workspace 레이아웃
+│   │       ├── workspace/             # 페이지 에디터
+│   │       │   ├── [pageId]/          # 개별 페이지
+│   │       │   └── database/[id]/     # 데이터베이스 뷰
+│   │       └── graph/                 # 그래프 뷰
+│   ├── components/                    # React 컴포넌트
+│   │   ├── blocks/                    # 블록 에디터
+│   │   ├── database/                  # 데이터베이스 뷰
+│   │   ├── graph/                     # 그래프 시각화
+│   │   ├── layout/                    # 레이아웃
+│   │   │   ├── AdminLayout.tsx        # Admin 클라이언트 레이아웃
+│   │   │   ├── WorkspaceLayout.tsx    # Workspace 레이아웃
+│   │   │   └── Sidebar.tsx            # 사이드바
+│   │   └── ErrorBoundary.tsx          # 에러 핸들링
+│   ├── actions/                       # 서버 액션 (DB CRUD)
+│   ├── stores/                        # Zustand 상태 관리
+│   │   ├── workspace.store.ts
+│   │   └── ui.store.ts
+│   ├── schemas/                       # Zod 스키마 (유효성 검증)
+│   ├── lib/                           # 유틸리티 함수
+│   │   ├── debounce.ts                # 디바운스/쓰로틀
+│   │   └── parse.ts                   # JSON 파싱
+│   ├── types/                         # TypeScript 타입
+│   └── test/                          # 테스트 설정
 ├── prisma/
-│   ├── schema.prisma         # DB 스키마
-│   └── dev.db                # SQLite 데이터베이스
+│   ├── schema.prisma                  # DB 스키마
+│   └── dev.db                         # SQLite 데이터베이스
+├── vitest.config.ts                   # 테스트 설정
 └── package.json
 ```
 
@@ -221,7 +267,7 @@ cd TodoLikeNotion
 ### "prisma: command not found"
 → 패키지 설치가 안 됐습니다.
 ```bash
-npm install
+pnpm install
 ```
 
 ### 데이터베이스 오류
@@ -233,14 +279,14 @@ npx prisma migrate reset
 ### 포트 3000이 사용 중
 → 다른 포트로 실행하세요.
 ```bash
-npm run dev -- -p 3001
+pnpm run dev -- -p 3001
 ```
 
 ### Turbopack 캐시 오류
 → 캐시를 삭제하세요.
 ```bash
 rm -rf .next
-npm run dev
+pnpm run dev
 ```
 
 ---

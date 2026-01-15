@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getDatabase, getDatabases } from "@/actions/database.actions";
 import { getPages } from "@/actions/page.actions";
-import Sidebar from "@/components/layout/Sidebar";
+import WorkspaceLayout from "@/components/layout/WorkspaceLayout";
 import DatabaseView from "@/components/database/DatabaseView";
 
 export const dynamic = "force-dynamic";
@@ -23,11 +23,8 @@ export default async function DatabasePage({ params }: DatabasePageProps) {
   }
 
   return (
-    <div className="app-container">
-      <Sidebar pages={pages} databases={databases} />
-      <main className="main-content">
-        <DatabaseView database={database} />
-      </main>
-    </div>
+    <WorkspaceLayout pages={pages} databases={databases}>
+      <DatabaseView database={database} />
+    </WorkspaceLayout>
   );
 }

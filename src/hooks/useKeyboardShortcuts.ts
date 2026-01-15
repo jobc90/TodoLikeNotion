@@ -41,7 +41,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}) {
       e.preventDefault();
       try {
         const page = await createPage();
-        router.push(`/pages/${page.id}`);
+        router.push(`/workspace/${page.id}`);
       } catch (error) {
         console.error("Failed to create page:", error);
       }

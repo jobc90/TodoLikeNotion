@@ -35,14 +35,14 @@ export default function Sidebar({ pages, databases = [] }: SidebarProps) {
   const handleNewPage = () => {
     startTransition(async () => {
       const page = await createPage();
-      router.push(`/pages/${page.id}`);
+      router.push(`/workspace/${page.id}`);
     });
   };
 
   const handleNewDatabase = () => {
     startTransition(async () => {
       const database = await createDatabase();
-      router.push(`/database/${database.id}`);
+      router.push(`/workspace/database/${database.id}`);
     });
   };
 
@@ -66,12 +66,12 @@ export default function Sidebar({ pages, databases = [] }: SidebarProps) {
     startTransition(async () => {
       if (type === "page") {
         await deletePage(id);
-        if (pathname === `/pages/${id}`) {
+        if (pathname === `/workspace/${id}`) {
           router.push("/");
         }
       } else {
         await deleteDatabase(id);
-        if (pathname === `/database/${id}`) {
+        if (pathname === `/workspace/database/${id}`) {
           router.push("/");
         }
       }
@@ -154,14 +154,14 @@ export default function Sidebar({ pages, databases = [] }: SidebarProps) {
               <div className="sidebar-empty-hint">No pages</div>
             ) : (
               pages.map((page) => {
-                const isActive = pathname === `/pages/${page.id}`;
+                const isActive = pathname === `/workspace/${page.id}`;
                 const isHovered = hoveredItemId === `page-${page.id}`;
                 const isMenuOpen = menuOpen?.type === "page" && menuOpen.id === page.id;
                 
                 return (
                   <Link
                     key={page.id}
-                    href={`/pages/${page.id}`}
+                    href={`/workspace/${page.id}`}
                     className={`sidebar-page-item ${isActive ? "active" : ""}`}
                     onMouseEnter={() => setHoveredItemId(`page-${page.id}`)}
                     onMouseLeave={() => setHoveredItemId(null)}
@@ -192,14 +192,14 @@ export default function Sidebar({ pages, databases = [] }: SidebarProps) {
               <div className="sidebar-empty-hint">No databases</div>
             ) : (
               databases.map((db) => {
-                const isActive = pathname === `/database/${db.id}`;
+                const isActive = pathname === `/workspace/database/${db.id}`;
                 const isHovered = hoveredItemId === `db-${db.id}`;
                 const isMenuOpen = menuOpen?.type === "database" && menuOpen.id === db.id;
                 
                 return (
                   <Link
                     key={db.id}
-                    href={`/database/${db.id}`}
+                    href={`/workspace/database/${db.id}`}
                     className={`sidebar-page-item ${isActive ? "active" : ""}`}
                     onMouseEnter={() => setHoveredItemId(`db-${db.id}`)}
                     onMouseLeave={() => setHoveredItemId(null)}
