@@ -2,6 +2,8 @@ import Sidebar from "@/components/layout/Sidebar";
 import { getPages, createPage } from "@/actions/page.actions";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const pages = await getPages();
 

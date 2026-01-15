@@ -6,7 +6,9 @@ import {
   PropertyType,
   type SelectOption,
   type SelectColor,
+  type Subtask,
 } from "@/types/database";
+import SubtaskModal from "./SubtaskModal";
 
 interface Property {
   id: string;
@@ -56,6 +58,17 @@ export default function BoardView({
 }: BoardViewProps) {
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
+  const [subtaskModalState, setSubtaskModalState] = useState<{
+    isOpen: boolean;
+    rowId: string | null;
+    cardTitle: string;
+    subtasks: Subtask[];
+  }>({
+    isOpen: false,
+    rowId: null,
+    cardTitle: "",
+    subtasks: [],
+  });
 
   // Get select properties for grouping
   const selectProperties = useMemo(
@@ -88,6 +101,12 @@ export default function BoardView({
   // Get title property (first text property)
   const titleProperty = useMemo(
     () => properties.find((p) => p.type === "text"),
+    [properties]
+  );
+
+  // Get or create subtask property (stored as text in a special property)
+  const subtaskProperty = useMemo(
+    () => properties.find((p) => p.name === "__subtasks__"),
     [properties]
   );
 
@@ -135,6 +154,61 @@ export default function BoardView({
     },
     [titleProperty, getCellValue]
   );
+
+  // Get subtasks for a row
+  const getSubtasks = useCallback(
+    (row: Row): Subtask[] => {
+      if (!subtaskProperty) return [];
+      const value = getCellValue(row, subtaskProperty.id);
+      if (!value) return [];
+      try {
+        return JSON.parse(value) as Subtask[];
+      } catch {
+        return [];
+      }
+    },
+    [subtaskProperty, getCellValue]
+  );
+
+  // Handle card click - open subtask modal
+  const handleCardClick = useCallback(
+    (row: Row, e: React.MouseEvent) => {
+      // Prevent triggering when dragging
+      if (draggedCardId) return;
+
+      const subtasks = getSubtasks(row);
+      const cardTitle = getCardTitle(row);
+
+      setSubtaskModalState({
+        isOpen: true,
+        rowId: row.id,
+        cardTitle,
+        subtasks,
+      });
+    },
+    [draggedCardId, getSubtasks, getCardTitle]
+  );
+
+  // Handle saving subtasks
+  const handleSaveSubtasks = useCallback(
+    (subtasks: Subtask[]) => {
+      if (!subtaskModalState.rowId || !subtaskProperty) return;
+
+      const value = JSON.stringify(subtasks);
+      onCellUpdate(subtaskModalState.rowId, subtaskProperty.id, value);
+    },
+    [subtaskModalState.rowId, subtaskProperty, onCellUpdate]
+  );
+
+  // Close subtask modal
+  const handleCloseSubtaskModal = useCallback(() => {
+    setSubtaskModalState({
+      isOpen: false,
+      rowId: null,
+      cardTitle: "",
+      subtasks: [],
+    });
+  }, []);
 
   // Handle drag start
   const handleDragStart = useCallback(
@@ -362,6 +436,9 @@ export default function BoardView({
                   <AnimatePresence mode="popLayout">
                     {columnRows.map((row) => {
                       const isDragging = draggedCardId === row.id;
+                      const subtasks = getSubtasks(row);
+                      const completedCount = subtasks.filter((st) => st.completed).length;
+                      const totalCount = subtasks.length;
 
                       return (
                         <motion.div
@@ -370,7 +447,7 @@ export default function BoardView({
                           draggable
                           onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent, row.id)}
                           onDragEnd={() => handleDragEnd()}
-                          onClick={() => onRowClick(row.id)}
+                          onClick={(e) => handleCardClick(row, e as unknown as React.MouseEvent)}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95 }}
@@ -383,6 +460,29 @@ export default function BoardView({
                           <div className="board-card-props">
                             {renderCardProperties(row)}
                           </div>
+                          {totalCount > 0 && (
+                            <motion.div
+                              className="board-card-subtasks"
+                              initial={{ opacity: 0, y: -5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <span className="subtask-icon">☑</span>
+                              <span className="subtask-progress-text">
+                                {completedCount}/{totalCount}
+                              </span>
+                              <div className="subtask-progress-mini">
+                                <motion.div
+                                  className="subtask-progress-mini-fill"
+                                  initial={{ width: 0 }}
+                                  animate={{
+                                    width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%`,
+                                  }}
+                                  transition={{ duration: 0.3 }}
+                                />
+                              </div>
+                            </motion.div>
+                          )}
                         </motion.div>
                       );
                     })}
@@ -408,6 +508,15 @@ export default function BoardView({
           })}
         </AnimatePresence>
       </div>
+
+      {/* Subtask Modal */}
+      <SubtaskModal
+        isOpen={subtaskModalState.isOpen}
+        onClose={handleCloseSubtaskModal}
+        subtasks={subtaskModalState.subtasks}
+        onSave={handleSaveSubtasks}
+        cardTitle={subtaskModalState.cardTitle}
+      />
     </div>
   );
 }

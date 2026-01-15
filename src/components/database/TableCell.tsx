@@ -152,8 +152,59 @@ export default function TableCell({
 
   // Handle cell-level keyboard navigation (when not editing)
   const handleCellKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+    async (e: React.KeyboardEvent) => {
       if (isEditing || showDropdown) return;
+
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
+
+      // Copy: Ctrl/Cmd + C
+      if (ctrlOrCmd && e.key === 'c') {
+        e.preventDefault();
+        try {
+          await navigator.clipboard.writeText(editValue);
+        } catch (err) {
+          console.error('Failed to copy:', err);
+        }
+        return;
+      }
+
+      // Paste: Ctrl/Cmd + V
+      if (ctrlOrCmd && e.key === 'v') {
+        e.preventDefault();
+        try {
+          const text = await navigator.clipboard.readText();
+          setEditValue(text);
+          lastSubmittedValue.current = text;
+          onUpdate(text);
+        } catch (err) {
+          console.error('Failed to paste:', err);
+        }
+        return;
+      }
+
+      // Cut: Ctrl/Cmd + X
+      if (ctrlOrCmd && e.key === 'x') {
+        e.preventDefault();
+        try {
+          await navigator.clipboard.writeText(editValue);
+          setEditValue('');
+          lastSubmittedValue.current = '';
+          onUpdate('');
+        } catch (err) {
+          console.error('Failed to cut:', err);
+        }
+        return;
+      }
+
+      // Delete: Delete or Backspace key
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        setEditValue('');
+        lastSubmittedValue.current = '';
+        onUpdate('');
+        return;
+      }
 
       switch (e.key) {
         case "Enter":
@@ -183,7 +234,7 @@ export default function TableCell({
           break;
       }
     },
-    [isEditing, showDropdown, handleStartEditing, onNavigate]
+    [isEditing, showDropdown, handleStartEditing, onNavigate, editValue, onUpdate]
   );
 
   // Handle checkbox toggle

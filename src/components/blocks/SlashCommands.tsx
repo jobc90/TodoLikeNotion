@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { BlockType } from "@/types/block";
+import type { ReactElement } from "react";
 
 interface CommandOption {
   type: BlockType;
   label: string;
   description: string;
-  icon: JSX.Element;
+  icon: ReactElement;
   keywords: string[];
 }
 

@@ -6,6 +6,8 @@ import { getPages, getPageWithBlocks } from "@/actions/page.actions";
 import { getDatabases } from "@/actions/database.actions";
 import type { Block, BlockProps } from "@/types/block";
 
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: Promise<{ pageId: string }>;
 }

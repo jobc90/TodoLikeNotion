@@ -1,5 +1,12 @@
 // Database 관련 타입 정의
 
+// Subtask 인터페이스
+export interface Subtask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
 // Property (컬럼) 타입
 export type PropertyType =
   | "text"
@@ -69,7 +76,7 @@ export interface Row {
 }
 
 // View 타입
-export type ViewType = "table" | "board" | "gallery";
+export type ViewType = "table" | "board" | "gallery" | "calendar";
 
 // Filter 조건
 export interface FilterCondition {
@@ -98,6 +105,7 @@ export interface ViewConfig {
   sorts?: SortCondition[];
   hiddenColumns?: string[];
   groupBy?: string;
+  dateProperty?: string;
 }
 
 // View 엔티티

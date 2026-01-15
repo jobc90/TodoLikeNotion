@@ -4,6 +4,8 @@ import { getPages } from "@/actions/page.actions";
 import Sidebar from "@/components/layout/Sidebar";
 import DatabaseView from "@/components/database/DatabaseView";
 
+export const dynamic = "force-dynamic";
+
 interface DatabasePageProps {
   params: Promise<{ databaseId: string }>;
 }

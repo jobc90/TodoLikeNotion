@@ -23,6 +23,7 @@ import {
   type SelectColor,
   type FilterCondition,
   type SortCondition,
+  type ViewConfig,
 } from "@/types/database";
 import TableHeader from "./TableHeader";
 import TableRow from "./TableRow";
@@ -30,6 +31,7 @@ import PropertyMenu from "./PropertyMenu";
 import RowDetailModal from "./RowDetailModal";
 import FilterSort from "./FilterSort";
 import BoardView from "./BoardView";
+import CalendarView from "./CalendarView";
 
 interface DatabaseViewProps {
   database: {
@@ -83,32 +85,13 @@ export default function DatabaseView({ database }: DatabaseViewProps) {
   const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
   const [showHiddenColumnsMenu, setShowHiddenColumnsMenu] = useState(false);
 
-  // View type state (table or board)
-  const [viewType, setViewType] = useState<"table" | "board">(
-    (currentView?.type as "table" | "board") || "table"
+  // View type state (table, board, or calendar)
+  const [viewType, setViewType] = useState<"table" | "board" | "calendar">(
+    (currentView?.type as "table" | "board" | "calendar") || "table"
   );
   const [groupByPropertyId, setGroupByPropertyId] = useState<string | null>(
     initialViewConfig.groupBy || null
   );
-
-  // Save view config when filters, sorts, hidden columns, or groupBy change
-  useEffect(() => {
-    if (!currentView) return;
-
-    const saveTimeout = setTimeout(async () => {
-      await updateView(currentView.id, {
-        type: viewType,
-        config: {
-          filters,
-          sorts,
-          hiddenColumns,
-          groupBy: groupByPropertyId ?? undefined,
-        },
-      });
-    }, 500); // Debounce save by 500ms
-
-    return () => clearTimeout(saveTimeout);
-  }, [filters, sorts, hiddenColumns, groupByPropertyId, viewType, currentView]);
 
   // Parse properties with options
   const properties = useMemo(() =>
@@ -119,6 +102,36 @@ export default function DatabaseView({ database }: DatabaseViewProps) {
     })),
     [database.properties]
   );
+
+  // Calendar view state - auto-select first date property
+  const firstDateProperty = useMemo(
+    () => properties.find((p) => p.type === "date"),
+    [properties]
+  );
+  const [datePropertyId, setDatePropertyId] = useState<string | null>(
+    initialViewConfig.dateProperty || firstDateProperty?.id || null
+  );
+
+  // Save view config when filters, sorts, hidden columns, groupBy, or dateProperty change
+  useEffect(() => {
+    if (!currentView) return;
+
+    const saveTimeout = setTimeout(async () => {
+      const config: ViewConfig = {
+        filters,
+        sorts,
+        hiddenColumns,
+        groupBy: groupByPropertyId ?? undefined,
+        dateProperty: datePropertyId ?? undefined,
+      };
+      await updateView(currentView.id, {
+        type: viewType,
+        config,
+      });
+    }, 500); // Debounce save by 500ms
+
+    return () => clearTimeout(saveTimeout);
+  }, [filters, sorts, hiddenColumns, groupByPropertyId, datePropertyId, viewType, currentView]);
 
   // Filter visible properties
   const visibleProperties = useMemo(() =>
@@ -532,6 +545,23 @@ export default function DatabaseView({ database }: DatabaseViewProps) {
             </span>
             <span>Board</span>
           </button>
+          {firstDateProperty && (
+            <button
+              className={`view-type-btn ${viewType === "calendar" ? "active" : ""}`}
+              onClick={() => setViewType("calendar")}
+              title="Calendar View"
+            >
+              <span className="view-type-icon">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="1" y="2" width="12" height="11" rx="1" stroke="currentColor" fill="none"/>
+                  <line x1="1" y1="5" x2="13" y2="5" stroke="currentColor"/>
+                  <line x1="4" y1="1" x2="4" y2="3" stroke="currentColor" strokeWidth="1.5"/>
+                  <line x1="10" y1="1" x2="10" y2="3" stroke="currentColor" strokeWidth="1.5"/>
+                </svg>
+              </span>
+              <span>Calendar</span>
+            </button>
+          )}
         </div>
 
         <div className="toolbar-divider" />
@@ -709,7 +739,7 @@ export default function DatabaseView({ database }: DatabaseViewProps) {
             </tr>
           </tbody>
         </table>
-      ) : (
+      ) : viewType === "board" ? (
         /* Board View */
         <BoardView
           rows={filteredAndSortedRows}
@@ -721,7 +751,17 @@ export default function DatabaseView({ database }: DatabaseViewProps) {
           onAddRow={handleAddRow}
           onAddSelectOption={handleAddSelectOption}
         />
-      )}
+      ) : viewType === "calendar" && datePropertyId ? (
+        /* Calendar View */
+        <CalendarView
+          rows={filteredAndSortedRows}
+          properties={properties}
+          datePropertyId={datePropertyId}
+          onCellUpdate={handleCellUpdate}
+          onAddRow={handleAddRow}
+          onRowClick={handleRowClick}
+        />
+      ) : null}
 
       {/* Property Menu */}
       {showPropertyMenu && (

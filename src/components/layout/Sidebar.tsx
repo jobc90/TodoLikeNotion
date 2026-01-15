@@ -134,6 +134,18 @@ export default function Sidebar({ pages, databases = [] }: SidebarProps) {
       </div>
 
       <div className="sidebar-scroll-area" style={{ flex: 1, overflowY: "auto", paddingBottom: "20px" }}>
+        {/* Graph View Link */}
+        <div className="sidebar-section">
+          <nav className="sidebar-list">
+            <Link
+              href="/graph"
+              className={`sidebar-page-item ${pathname === "/graph" ? "active" : ""}`}
+            >
+              <span className="sidebar-page-icon">🕸️</span>
+              <span className="sidebar-page-title">Graph View</span>
+            </Link>
+          </nav>
+        </div>
         {/* Pages Section */}
         <div className="sidebar-section">
           <div className="sidebar-section-title">Private</div>

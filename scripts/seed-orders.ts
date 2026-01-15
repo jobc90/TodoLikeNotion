@@ -80,7 +80,7 @@ async function main() {
     { name: "메모", type: "text", width: 200 }, // 특이사항/메모
   ];
 
-  const createdProps = [];
+  const createdProps: any[] = [];
   for (let i = 0; i < properties.length; i++) {
     const prop = properties[i];
     const created = await prisma.property.create({
@@ -97,7 +97,7 @@ async function main() {
   }
 
   // Helper to find prop ID by name
-  const p = (name: string) => createdProps.find((cp) => cp.name === name)?.id!;
+  const p = (name: string) => createdProps.find((cp: any) => cp.name === name)?.id!;
 
   // 4. Insert Rows (Data from screenshot)
   const rowsData = [

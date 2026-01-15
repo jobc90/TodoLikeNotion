@@ -351,6 +351,7 @@ export interface ViewConfig {
   }>;
   hiddenColumns?: string[];
   groupBy?: string;
+  dateProperty?: string;
 }
 
 // 뷰 생성

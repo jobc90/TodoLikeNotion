@@ -6,6 +6,7 @@ import sanitizeHtml from "sanitize-html";
 import type { Block, BlockType, BlockProps } from "@/types/block";
 import { updateBlock, createBlock, deleteBlock } from "@/actions/block.actions";
 import SlashCommands from "./SlashCommands";
+import PageLinkPopover from "./PageLinkPopover";
 
 // HTML sanitization options - allow basic formatting tags
 const sanitizeOptions: sanitizeHtml.IOptions = {
@@ -50,6 +51,9 @@ export default function BlockRenderer({
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [slashMenuPosition, setSlashMenuPosition] = useState({ x: 0, y: 0 });
   const [slashQuery, setSlashQuery] = useState("");
+  const [showPageLinkPopover, setShowPageLinkPopover] = useState(false);
+  const [pageLinkPopoverPosition, setPageLinkPopoverPosition] = useState({ x: 0, y: 0 });
+  const [pageLinkQuery, setPageLinkQuery] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<string>(block.props.text || "");
   const localDragControls = useDragControls();
@@ -144,13 +148,44 @@ export default function BlockRenderer({
         }
       }
 
-      // Detect slash command at start or after space
+      // Detect [[ for page links
       const selection = window.getSelection();
       if (!selection || !contentRef.current) return;
 
       const text = newText;
-      
-      // Check if "/" was just typed at start or after space
+
+      // Check if "[[" was just typed
+      if (text.includes("[[")) {
+        const lastDoubleBracketIndex = text.lastIndexOf("[[");
+        const afterBracket = text.substring(lastDoubleBracketIndex + 2);
+
+        // Only show popover if no closing brackets yet
+        if (!afterBracket.includes("]]")) {
+          const rect = contentRef.current.getBoundingClientRect();
+          setPageLinkPopoverPosition({
+            x: rect.left,
+            y: rect.bottom + 4,
+          });
+          setPageLinkQuery(afterBracket);
+          setShowPageLinkPopover(true);
+          setShowSlashMenu(false); // Close slash menu if open
+        }
+      } else if (showPageLinkPopover) {
+        // Update search query if popover is already open
+        const lastDoubleBracketIndex = text.lastIndexOf("[[");
+        if (lastDoubleBracketIndex !== -1) {
+          const afterBracket = text.substring(lastDoubleBracketIndex + 2);
+          if (!afterBracket.includes("]]")) {
+            setPageLinkQuery(afterBracket);
+          } else {
+            setShowPageLinkPopover(false);
+          }
+        } else {
+          setShowPageLinkPopover(false);
+        }
+      }
+
+      // Detect slash command at start or after space
       if (text.endsWith("/") || text.includes(" /")) {
         const lastSlashIndex = text.lastIndexOf("/");
         const beforeSlash = text.substring(0, lastSlashIndex);
@@ -164,6 +199,7 @@ export default function BlockRenderer({
           });
           setSlashQuery("");
           setShowSlashMenu(true);
+          setShowPageLinkPopover(false); // Close page link popover if open
         }
       } else if (showSlashMenu) {
         // Update search query if menu is already open
@@ -176,7 +212,7 @@ export default function BlockRenderer({
         }
       }
     },
-    [showSlashMenu, block.id, onUpdate]
+    [showSlashMenu, showPageLinkPopover, block.id, onUpdate]
   );
 
   const handleBlur = useCallback(async () => {
@@ -225,11 +261,41 @@ export default function BlockRenderer({
     [block.id, onUpdate]
   );
 
+  const handlePageLinkSelect = useCallback(
+    async (pageTitle: string, pageId: string) => {
+      setShowPageLinkPopover(false);
+
+      // Replace [[ and search text with [[Page Name]]
+      const text = textRef.current;
+      const lastDoubleBracketIndex = text.lastIndexOf("[[");
+      const textBeforeBracket = text.substring(0, lastDoubleBracketIndex);
+      const newText = `${textBeforeBracket}[[${pageTitle}]]`;
+
+      // Update the text
+      textRef.current = newText;
+      if (contentRef.current) {
+        contentRef.current.textContent = newText;
+      }
+
+      await updateBlock(block.id, {
+        props: { text: newText },
+      });
+
+      onUpdate?.();
+
+      // Focus back on the content
+      setTimeout(() => {
+        contentRef.current?.focus();
+      }, 100);
+    },
+    [block.id, onUpdate]
+  );
+
   const handleKeyDown = useCallback(
     async (e: KeyboardEvent<HTMLDivElement>) => {
-      // Don't handle Enter/Escape/Arrow keys if slash menu is open
+      // Don't handle Enter/Escape/Arrow keys if slash menu or page link popover is open
       if (
-        showSlashMenu &&
+        (showSlashMenu || showPageLinkPopover) &&
         (e.key === "Enter" ||
           e.key === "Escape" ||
           e.key === "ArrowUp" ||
@@ -282,7 +348,7 @@ export default function BlockRenderer({
         }
       }
     },
-    [pageId, block.order, block.id, block.props.text, onUpdate, showSlashMenu, localProps.level]
+    [pageId, block.order, block.id, block.props.text, onUpdate, showSlashMenu, showPageLinkPopover, localProps.level]
   );
 
   // Context menu handlers
@@ -298,19 +364,45 @@ export default function BlockRenderer({
     onUpdate?.();
   }, [block.id, onUpdate]);
 
-  const renderBlockContent = () => {
-    const getCommonProps = (additionalClassName?: string) => ({
-      ref: contentRef,
-      contentEditable: true,
-      suppressContentEditableWarning: true,
-      className: `block-content ${additionalClassName || ""} ${block.type === "todo" && localProps.checked ? "checked" : ""}`.trim(),
-      "data-placeholder": getPlaceholder(block.type),
-      onInput: handleContentChange,
-      onBlur: handleBlur,
-      onFocus: () => setIsEditing(true),
-      onKeyDown: handleKeyDown,
-      dangerouslySetInnerHTML: { __html: sanitizeHtml(block.props.text || "", sanitizeOptions) },
+  // Helper function to convert [[Page Name]] to HTML links
+  const parsePageLinks = (text: string): string => {
+    // Convert [[Page Name]] to clickable links
+    return text.replace(/\[\[([^\]]+)\]\]/g, (match, pageName) => {
+      return `<a href="/pages/${encodeURIComponent(pageName)}" class="page-link" data-page-name="${pageName}" title="Go to ${pageName}">${pageName}</a>`;
     });
+  };
+
+  const renderBlockContent = () => {
+    const getCommonProps = (additionalClassName?: string) => {
+      // Parse page links first, then sanitize
+      const textWithLinks = parsePageLinks(block.props.text || "");
+      const sanitizedHtml = sanitizeHtml(textWithLinks, sanitizeOptions);
+
+      return {
+        ref: contentRef,
+        contentEditable: true,
+        suppressContentEditableWarning: true,
+        className: `block-content ${additionalClassName || ""} ${block.type === "todo" && localProps.checked ? "checked" : ""}`.trim(),
+        "data-placeholder": getPlaceholder(block.type),
+        onInput: handleContentChange,
+        onBlur: handleBlur,
+        onFocus: () => setIsEditing(true),
+        onKeyDown: handleKeyDown,
+        onClick: (e: React.MouseEvent) => {
+          // Handle page link clicks
+          const target = e.target as HTMLElement;
+          if (target.classList.contains("page-link")) {
+            e.preventDefault();
+            const pageName = target.getAttribute("data-page-name");
+            if (pageName) {
+              // Navigate to the page
+              window.location.href = `/pages/${encodeURIComponent(pageName)}`;
+            }
+          }
+        },
+        dangerouslySetInnerHTML: { __html: sanitizedHtml },
+      };
+    };
 
     switch (block.type) {
       case "heading1":
@@ -397,6 +489,16 @@ export default function BlockRenderer({
           onClose={() => setShowSlashMenu(false)}
           position={slashMenuPosition}
           searchQuery={slashQuery}
+        />
+      )}
+
+      {/* Page Link Popover */}
+      {showPageLinkPopover && (
+        <PageLinkPopover
+          onSelect={handlePageLinkSelect}
+          onClose={() => setShowPageLinkPopover(false)}
+          position={pageLinkPopoverPosition}
+          searchQuery={pageLinkQuery}
         />
       )}
 
